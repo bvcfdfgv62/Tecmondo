@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { storageService } from '../services/storage';
-import { ServiceOrder, ServiceItem, ServiceOrderStatus, ServiceCategory, ServiceCatalogItem } from '../types';
+import { ServiceOrder, ServiceItem, ServiceOrderStatus, ServiceCategory, ServiceCatalogItem, Product } from '../types';
 import { SERVICE_CATALOG } from '../data/serviceCatalog';
 import {
-    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search
+    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package, ShoppingCart
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,12 @@ const ServiceOrderDetail: React.FC = () => {
     const [serviceQuantity, setServiceQuantity] = useState(1);
     const [customServicePrice, setCustomServicePrice] = useState<string>('');
 
+    // Product Module State
+    const [products, setProducts] = useState<Product[]>([]);
+    const [searchProductQuery, setSearchProductQuery] = useState('');
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [productQuantity, setProductQuantity] = useState(1);
+
     // Pre-load logic
     useEffect(() => {
         if (id === 'novo') {
@@ -51,12 +57,22 @@ const ServiceOrderDetail: React.FC = () => {
         }
     }, [id, navigate]);
 
+    useEffect(() => {
+        setProducts(storageService.getProducts());
+    }, []);
+
     // Derived state for catalog
     const filteredServices = SERVICE_CATALOG.filter(service => {
         const matchesCategory = selectedCategory ? service.category === selectedCategory : true;
         const matchesSearch = service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
             service.code.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch && service.active;
+    });
+
+    const filteredProducts = products.filter(product => {
+        const matchesSearch = product.description.toLowerCase().includes(searchProductQuery.toLowerCase()) ||
+            product.barcode.includes(searchProductQuery);
+        return matchesSearch && product.stockQuantity > 0;
     });
 
     const handleChange = (field: keyof ServiceOrder, value: any) => {
@@ -116,7 +132,7 @@ const ServiceOrderDetail: React.FC = () => {
         };
 
         const updatedServices = [...formData.services, newItem];
-        updateTotals(updatedServices, formData.discount);
+        updateTotals(updatedServices, formData.products || [], formData.discount);
 
         // Reset selection
         setSelectedCatalogItem(null);
@@ -127,18 +143,57 @@ const ServiceOrderDetail: React.FC = () => {
     const removeService = (itemId: string) => {
         if (!formData) return;
         const updatedServices = formData.services.filter(s => s.id !== itemId);
-        updateTotals(updatedServices, formData.discount);
+        updateTotals(updatedServices, formData.products || [], formData.discount);
     };
 
-    const updateTotals = (services: ServiceItem[], discount: number) => {
+    const updateTotals = (services: ServiceItem[], productsFn: any[], discount: number) => {
         if (!formData) return;
         const totalServices = services.reduce((acc, item) => acc + item.value, 0);
+        const totalProducts = productsFn.reduce((acc, item) => acc + item.total, 0);
+
         setFormData({
             ...formData,
             services: services,
+            products: productsFn,
             discount: discount,
-            totalValue: Math.max(0, totalServices - discount)
+            totalValue: Math.max(0, (totalServices + totalProducts) - discount)
         });
+    };
+
+    // --- Product Handlers ---
+    const handleSelectProduct = (item: Product) => {
+        setSelectedProduct(item);
+        setProductQuantity(1);
+    };
+
+    const addProduct = () => {
+        if (!formData || !selectedProduct) return;
+
+        const newItem = {
+            id: Date.now().toString(),
+            productId: selectedProduct.id,
+            description: selectedProduct.description,
+            unitPrice: selectedProduct.resalePrice,
+            quantity: productQuantity,
+            total: selectedProduct.resalePrice * productQuantity
+        };
+
+        const currentProducts = formData.products || [];
+        const updatedProducts = [...currentProducts, newItem];
+
+        updateTotals(formData.services, updatedProducts, formData.discount);
+
+        // Reset
+        setSelectedProduct(null);
+        setProductQuantity(1);
+        setSearchProductQuery('');
+    };
+
+    const removeProduct = (itemId: string) => {
+        if (!formData) return;
+        const currentProducts = formData.products || [];
+        const updatedProducts = currentProducts.filter(p => p.id !== itemId);
+        updateTotals(formData.services, updatedProducts, formData.discount);
     };
 
     const handlePrint = () => {
@@ -385,6 +440,138 @@ const ServiceOrderDetail: React.FC = () => {
                         </CardContent>
                     </Card>
 
+                    {/* Product Module Section */}
+                    <Card className="border-white/5 bg-surface/30">
+                        <CardHeader className="pb-3 border-b border-white/10">
+                            <CardTitle className="text-sm font-bold uppercase text-blue-400 tracking-wider flex items-center gap-2">
+                                <Package size={16} /> Produtos e Peças
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="grid grid-cols-1 md:grid-cols-2 divide-x divide-white/5">
+                                {/* Left: Product List */}
+                                <div className="p-4 space-y-3">
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-2.5 text-muted-foreground" size={14} />
+                                        <Input
+                                            placeholder="Buscar produto por nome ou cód. barras..."
+                                            className="pl-8 h-9 text-xs"
+                                            value={searchProductQuery}
+                                            onChange={(e) => setSearchProductQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="h-[250px] overflow-y-auto space-y-1 pr-2 custom-scrollbar">
+                                        {filteredProducts.map(product => (
+                                            <button
+                                                key={product.id}
+                                                onClick={() => !isReadOnly && handleSelectProduct(product)}
+                                                className={cn(
+                                                    "w-full text-left p-3 rounded-md text-xs transition-all flex items-center gap-3 group border mb-2",
+                                                    selectedProduct?.id === product.id
+                                                        ? "bg-blue-500/20 border-blue-500/50 text-white shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                                                        : "bg-surface/50 border-white/5 hover:border-white/10 hover:bg-white/5 text-slate-300"
+                                                )}
+                                            >
+                                                {/* Image Thumbnail */}
+                                                <div className="h-10 w-10 shrink-0 rounded bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center">
+                                                    {product.imageUrl ? (
+                                                        <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <Package size={16} className="opacity-20" />
+                                                    )}
+                                                </div>
+
+                                                {/* Product Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <span className="font-mono text-[10px] bg-black/30 px-1.5 py-0.5 rounded text-muted-foreground">
+                                                            {product.barcode}
+                                                        </span>
+                                                    </div>
+                                                    <div className="font-medium truncate leading-tight text-sm">
+                                                        {product.description}
+                                                    </div>
+                                                    <div className="mt-1 flex items-center gap-2">
+                                                        <span className={cn(
+                                                            "text-[10px] px-1.5 py-0.5 rounded font-bold",
+                                                            product.stockQuantity > 0
+                                                                ? "bg-emerald-500/10 text-emerald-400"
+                                                                : "bg-red-500/10 text-red-400"
+                                                        )}>
+                                                            {product.stockQuantity > 0 ? `${product.stockQuantity} un.` : 'Sem Estoque'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Price */}
+                                                <div className="text-right pl-2">
+                                                    <span className="block font-mono text-blue-400 font-bold text-sm">
+                                                        R$ {product.resalePrice.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                        {filteredProducts.length === 0 && (
+                                            <div className="text-center py-4 text-xs text-muted-foreground">Nenhum produto encontrado.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right: Add Product to OS */}
+                                <div className="p-4 bg-black/20 flex flex-col justify-center space-y-4">
+                                    {selectedProduct ? (
+                                        <>
+                                            <div className="space-y-1">
+                                                <p className="text-xs text-muted-foreground font-mono">{selectedProduct.barcode}</p>
+                                                <h3 className="text-sm font-semibold text-white leading-tight">{selectedProduct.description}</h3>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Valor Unit. (R$)</label>
+                                                        <Input
+                                                            type="number"
+                                                            className="h-8 bg-slate-900 border-slate-700"
+                                                            value={selectedProduct.resalePrice}
+                                                            disabled
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Quantidade</label>
+                                                        <Input
+                                                            type="number"
+                                                            className="h-8 bg-slate-900 border-slate-700"
+                                                            value={productQuantity}
+                                                            onChange={(e) => setProductQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                                            min={1}
+                                                            max={selectedProduct.stockQuantity}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="pt-2">
+                                                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                                        <span>Subtotal Item</span>
+                                                        <span className="text-white font-bold">
+                                                            R$ {(selectedProduct.resalePrice * productQuantity).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <Button onClick={addProduct} className="w-full bg-blue-600 hover:bg-blue-500 h-8 text-xs uppercase tracking-wider font-bold">
+                                                        <Plus size={14} className="mr-2" /> Adicionar Produto
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-center text-muted-foreground text-xs py-10 opacity-50">
+                                            Selecione um produto da lista para adicionar.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Diagnosis Field */}
                     <Card className="border-white/5 bg-surface/30">
                         <CardContent className="pt-4 space-y-4">
@@ -432,7 +619,34 @@ const ServiceOrderDetail: React.FC = () => {
                                     </div>
                                 ))}
                                 {formData.services.length === 0 && (
-                                    <div className="text-center text-muted-foreground text-xs py-8">Nenhum serviço adicionado.</div>
+                                    <div className="text-center text-muted-foreground text-xs py-4">Nenhum serviço adicionado.</div>
+                                )}
+
+                                {/* Products List */}
+                                {(formData.products || []).length > 0 && (
+                                    <>
+                                        <div className="px-4 py-2 border-y border-white/5 bg-black/20 text-[10px] font-bold uppercase tracking-wider text-blue-400">
+                                            Produtos / Peças
+                                        </div>
+                                        {formData.products?.map((item) => (
+                                            <div key={item.id} className="relative group bg-white/5 p-3 rounded-sm border border-transparent hover:border-white/10 transition-all mx-4 mb-3">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <div>
+                                                        <span className="text-sm font-medium text-white">{item.description}</span>
+                                                    </div>
+                                                    {!isReadOnly && (
+                                                        <button onClick={() => removeProduct(item.id)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded">
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                                    <span>{item.quantity}x R$ {item.unitPrice.toFixed(2)}</span>
+                                                    <span className="text-blue-400 font-mono text-sm">R$ {item.total.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </>
                                 )}
                             </div>
 
@@ -448,7 +662,7 @@ const ServiceOrderDetail: React.FC = () => {
                                         type="number"
                                         className="w-24 h-8 text-right bg-transparent border-white/10 focus:border-emerald-500"
                                         value={formData.discount}
-                                        onChange={(e) => updateTotals(formData.services, parseFloat(e.target.value) || 0)}
+                                        onChange={(e) => updateTotals(formData.services, formData.products || [], parseFloat(e.target.value) || 0)}
                                         disabled={isReadOnly}
                                     />
                                 </div>

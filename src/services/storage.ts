@@ -1,10 +1,13 @@
-import { BudgetRequest, Transaction, DashboardStats, ServiceOrder, ServiceOrderStatus } from '../types';
+import { BudgetRequest, Transaction, DashboardStats, ServiceOrder, ServiceOrderStatus, Product, Sale } from '../types';
 
 const STORAGE_KEYS = {
   BUDGETS: 'tec_mondo_budgets',
   TRANSACTIONS: 'tec_mondo_transactions',
   SERVICE_ORDERS: 'tec_mondo_service_orders',
-  SETTINGS: 'tec_mondo_settings'
+  SETTINGS: 'tec_mondo_settings',
+  PRODUCTS: 'tec_mondo_products',
+  CLIENTS: 'tec_mondo_clients',
+  SALES: 'tec_mondo_sales'
 };
 
 export const storageService = {
@@ -107,6 +110,7 @@ export const storageService = {
       },
       reportedProblem: data.reportedProblem || '',
       services: [],
+      products: [],
       discount: 0,
       totalValue: 0,
       paymentStatus: 'pending',
@@ -230,6 +234,54 @@ export const storageService = {
     return { orders, budgets };
   },
 
+  // --- Products Methods ---
+  getProducts: (): Product[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    return data ? JSON.parse(data) : [];
+  },
+
+  getProductById: (id: string): Product | undefined => {
+    const products = storageService.getProducts();
+    return products.find(p => p.id === id);
+  },
+
+  saveProduct: (product: Product) => {
+    const products = storageService.getProducts();
+    const existingIndex = products.findIndex(p => p.id === product.id);
+
+    if (existingIndex >= 0) {
+      products[existingIndex] = product;
+    } else {
+      products.unshift(product);
+    }
+
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+  },
+
+  createProduct: (data: Partial<Product>): Product => {
+    const newProduct: Product = {
+      id: Math.floor(1000 + Math.random() * 9000).toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      barcode: data.barcode || '',
+      description: data.description || '',
+      purchasePrice: data.purchasePrice || 0,
+      resalePrice: data.resalePrice || 0,
+      stockQuantity: data.stockQuantity || 0,
+      imageUrl: data.imageUrl || '',
+      supplier: data.supplier || '',
+      ...data
+    } as Product;
+
+    storageService.saveProduct(newProduct);
+    return newProduct;
+  },
+
+  deleteProduct: (id: string) => {
+    const products = storageService.getProducts().filter(p => p.id !== id);
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+  },
+
   getKPIs: () => {
     const budgets = storageService.getBudgets();
     const transactions = storageService.getTransactions();
@@ -263,5 +315,43 @@ export const storageService = {
     const uniqueClients = clientEmails.size;
 
     return { monthlyIncome, pendingBudgets, activeOS, uniqueClients };
+  },
+
+  // --- Sales Methods ---
+  getSales: (): Sale[] => {
+    const data = localStorage.getItem(STORAGE_KEYS.SALES);
+    return data ? JSON.parse(data) : [];
+  },
+
+  createSale: (sale: Omit<Sale, 'id' | 'createdAt'>): Sale => {
+    const sales = storageService.getSales();
+    const newSale: Sale = {
+      ...sale,
+      id: `V-${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+
+    // Save Sale
+    localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify([newSale, ...sales]));
+
+    // Reduce Stock
+    const products = storageService.getProducts();
+    newSale.items.forEach(item => {
+      const productIndex = products.findIndex(p => p.id === item.productId);
+      if (productIndex >= 0) {
+        products[productIndex].stockQuantity -= item.quantity;
+      }
+    });
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+
+    // Register Transaction
+    storageService.addTransaction({
+      description: `Venda #${newSale.id} - ${newSale.customerName}`,
+      amount: newSale.totalValue,
+      category: 'Vendas',
+      type: 'income'
+    });
+
+    return newSale;
   }
 };

@@ -13,6 +13,25 @@ export interface DashboardStats {
     monthlyExpense: number;
 }
 
+export interface SystemSettings {
+    companyName: string;
+    cnpj: string;
+    phone: string;
+    email: string;
+    address: string;
+}
+
+export interface Client {
+    id: string;
+    createdAt: string;
+    name: string;
+    email: string;
+    whatsapp: string;
+    cpfOrCnpj: string;
+    address: string;
+    notes: string;
+}
+
 export type EquipmentType = 'PC' | 'Notebook' | 'Celular' | 'Console' | 'Outro';
 
 export interface BudgetRequest {
@@ -90,6 +109,14 @@ export interface ServiceOrder {
 
     // Financials
     services: ServiceItem[];
+    products?: {
+        id: string;
+        productId: string;
+        description: string;
+        unitPrice: number;
+        quantity: number;
+        total: number;
+    }[];
     discount: number;
     totalValue: number;
 
@@ -104,4 +131,37 @@ export interface ServiceOrder {
 
     // Link to other entities
     budgetId?: string; // If converted from budget
+}
+
+export interface Product {
+    id: string;
+    barcode: string;
+    description: string;
+    purchasePrice: number;
+    resalePrice: number;
+    stockQuantity: number;
+    imageUrl: string;
+    supplier: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface SaleItem {
+    id: string;
+    productId: string;
+    description: string;
+    unitPrice: number;
+    quantity: number;
+    total: number;
+}
+
+export interface Sale {
+    id: string;
+    createdAt: string;
+    clientId?: string;
+    customerName: string;
+    items: SaleItem[];
+    totalValue: number;
+    paymentMethod: 'credit' | 'debit' | 'money' | 'pix';
+    status: 'completed' | 'cancelled';
 }

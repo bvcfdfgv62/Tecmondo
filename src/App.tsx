@@ -12,6 +12,9 @@ import ServiceOrderPrint from './pages/ServiceOrderPrint';
 import Clients from './pages/Clients';
 import ClientDetail from './pages/ClientDetail';
 import Settings from './pages/Settings';
+import Products from './pages/Products';
+import ProductDetail from './pages/ProductDetail';
+import NewSale from './pages/NewSale';
 import { AdminLayout } from './layouts/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -76,6 +79,30 @@ const App: React.FC = () => {
           <ProtectedRoute>
             <AdminLayout>
               <ClientDetail />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/produtos" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <Products />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/produtos/:id" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <ProductDetail />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/vendas/nova" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <NewSale />
             </AdminLayout>
           </ProtectedRoute>
         } />

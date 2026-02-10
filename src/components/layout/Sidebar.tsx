@@ -8,7 +8,9 @@ import {
     Users,
     Settings,
     LogOut,
-    ChevronRight
+    ChevronRight,
+    Package,
+    ShoppingCart
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +28,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
         { path: '/', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/os', label: 'Ordens de Serviço', icon: Wrench },
         { path: '/clientes', label: 'Clientes (CRM)', icon: Users },
+        { path: '/produtos', label: 'Produtos', icon: Package },
+        { path: '/vendas/nova', label: 'Nova Venda', icon: ShoppingCart },
         { path: '/fluxo', label: 'Fluxo de Caixa', icon: Wallet },
         { path: '/configuracoes', label: 'Configurações', icon: Settings },
     ];
