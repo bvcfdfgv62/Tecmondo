@@ -82,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                             </div>
                             <ChevronRight size={14} className={cn(
                                 "opacity-0 -translate-x-2 transition-all duration-200",
-                                "group-hover:opacity-100 group-hover:translate-x-0" // Using string for conditional class to avoid TypeScript error if isActive wasn't available here, but simpler to just use group-hover
+                                "group-hover:opacity-100 group-hover:translate-x-0"
                             )} />
                         </NavLink>
                     ))}
