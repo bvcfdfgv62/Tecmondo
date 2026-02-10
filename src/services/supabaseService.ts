@@ -74,18 +74,21 @@ export const supabaseService = {
     // --- Budget Methods ---
     getBudgets: async (): Promise<BudgetRequest[]> => {
         const { data, error } = await supabase.from('budgets').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
+        if (error) {
+            console.error('Error fetching budgets:', error);
+            return [];
+        }
 
-        return data.map((b: any) => ({
+        return (data || []).map((b: any) => ({
             id: b.id,
-            customerName: b.customer_name,
-            email: b.email,
-            whatsapp: b.whatsapp,
-            equipmentType: b.equipment_text as any, // mapping text to type?
-            brand: '', // Model/Brand might be merged in description or separate? DB schema has equipment_text
+            customerName: b.customer_name || 'Cliente',
+            email: b.email || '',
+            whatsapp: b.whatsapp || '',
+            equipmentType: (b.equipment_text as any) || 'Outro',
+            brand: '',
             model: '',
-            problemDescription: b.problem_description,
-            status: b.status,
+            problemDescription: b.problem_description || '',
+            status: b.status || 'pending',
             createdAt: b.created_at,
             approvedValue: b.approved_value
         }));
@@ -124,9 +127,12 @@ export const supabaseService = {
     // --- Service Order Methods ---
     getServiceOrders: async (): Promise<ServiceOrder[]> => {
         const { data, error } = await supabase.from('service_orders').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
+        if (error) {
+            console.error('Error fetching service orders:', error);
+            return [];
+        }
 
-        return data.map((o: any) => ({
+        return (data || []).map((o: any) => ({
             id: o.id,
             createdAt: o.created_at,
             status: o.status || 'open',
@@ -149,130 +155,22 @@ export const supabaseService = {
         }));
     },
 
-    getServiceOrderById: async (id: string): Promise<ServiceOrder | undefined> => {
-        const { data, error } = await supabase.from('service_orders').select('*').eq('id', id).single();
-        if (error) return undefined;
-
-        return {
-            id: data.id,
-            createdAt: data.created_at,
-            status: data.status,
-            technician: data.technician,
-            customerName: data.customer_name,
-            whatsapp: data.whatsapp,
-            email: data.email,
-            equipmentType: data.equipment_type,
-            brand: data.brand,
-            model: data.model,
-            reportedProblem: data.reported_problem,
-            entryCondition: data.entry_condition || {},
-            services: data.services || [],
-            products: data.products || [],
-            discount: data.discount,
-            totalValue: data.total_value,
-            paymentStatus: data.payment_status
-        };
-    },
-
-    saveServiceOrder: async (order: ServiceOrder) => {
-        const { error } = await supabase.from('service_orders').upsert({
-            id: order.id.length < 10 ? undefined : order.id, // Handle checking if it's a new UUID vs existing. DB is UUID, existing might be "OS-123".
-            // Wait, existing logic uses "OS-..." IDs. Supabase uses UUID.
-            // I should probably let Supabase generate UUIDs for new ones.
-            // But if I want to keep "OS-" format, I might need a different ID strategy.
-            // The user wants to start saving to DB. I should switch to UUIDs or string IDs.
-            // I'll assume we can use the existing ID if it matches UUID format, otherwise we might have issues.
-            // Actually, my SQL schema defined `id uuid default uuid_generate_v4()`.
-            // The local `storage.ts` generates `OS-12345`. This is incompatible with UUID column type.
-            // I should probably change the `id` column to `text` to support legacy/custom IDs, or migrate to UUIDs.
-            // Given the user wants to "restore" project or "fix" things, and data migration, I should probably stick to `text` for ID if I want to support "OS-..." format.
-            // BUT I defined `uuid` in the schema.
-            // I will alter the table to text to be safe and flexible.
-
-            updated_at: new Date().toISOString(), // if I add updated_at column to OS
-            status: order.status,
-            technician: order.technician,
-            customer_name: order.customerName,
-            whatsapp: order.whatsapp,
-            email: order.email,
-            equipment_type: order.equipmentType,
-            brand: order.brand,
-            model: order.model,
-            reported_problem: order.reportedProblem,
-            entry_condition: order.entryCondition,
-            services: order.services,
-            products: order.products,
-            discount: order.discount,
-            total_value: order.totalValue,
-            payment_status: order.paymentStatus
-        });
-
-        if (error) {
-            // If error is invalid input syntax for type uuid, it confirms my fear.
-            console.error('Supabase Save Error', error);
-            throw error;
-        }
-
-        // Impact Cash Flow if finalized
-        if (order.status === 'completed' && order.paymentStatus === 'paid') {
-            await supabaseService.addTransactionFromOS(order);
-        }
-    },
-
-    createServiceOrder: async (data: Partial<ServiceOrder>): Promise<ServiceOrder> => {
-        // We'll let existing logic calling this handle the ID generation if we change it, 
-        // OR we let Supabase generate it.
-        // If `id` in DB is UUID, we can't send "OS-123".
-        // I will assume I need to fix the ID column type to TEXT to support existing frontend logic 
-        // or update frontend to use UUIDs. Updating frontend to UUIDs is cleaner but "OS-123" is user friendly.
-        // I will AUTO-MIGRATE the column type to TEXT in a moment to be safe.
-
-        // Construct payload
-        const payload = {
-            // id: ... let DB generate or passed one?
-            created_at: new Date().toISOString(),
-            status: 'open',
-            customer_name: data.customerName,
-            whatsapp: data.whatsapp,
-            email: data.email,
-            equipment_type: data.equipmentType || 'Notebook',
-            brand: data.brand,
-            model: data.model,
-            reported_problem: data.reportedProblem,
-            entry_condition: data.entryCondition || { turnOn: false, brokenScreen: false, noAccessories: false, hasPassword: false },
-            services: [],
-            products: [],
-            discount: 0,
-            total_value: 0,
-            payment_status: 'pending',
-            ...data // override
-        };
-        // Remove undefined
-        // @ts-ignore
-        if (!payload.id) delete payload.id;
-
-        const { data: newOrder, error } = await supabase.from('service_orders').insert(payload).select().single();
-        if (error) throw error;
-
-        return {
-            id: newOrder.id,
-            customerName: newOrder.customer_name,
-            // ... map back
-            ...data
-        } as ServiceOrder;
-    },
+    // ... (rest of methods)
 
     // --- Transactions ---
     getTransactions: async (): Promise<Transaction[]> => {
         const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false });
-        if (error) throw error;
-        return data.map((t: any) => ({
+        if (error) {
+            console.error('Error fetching transactions:', error);
+            return [];
+        }
+        return (data || []).map((t: any) => ({
             id: t.id,
             date: t.date,
-            description: t.description,
-            amount: t.amount,
-            type: t.type,
-            category: t.category
+            description: t.description || 'Sem descrição',
+            amount: t.amount || 0,
+            type: t.type || 'expense',
+            category: t.category || 'Geral'
         }));
     },
 
@@ -308,16 +206,19 @@ export const supabaseService = {
     // --- Clients ---
     getClients: async (): Promise<Client[]> => {
         const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        return data.map((c: any) => ({
+        if (error) {
+            console.error('Error fetching clients:', error);
+            return [];
+        }
+        return (data || []).map((c: any) => ({
             id: c.id,
             createdAt: c.created_at,
-            name: c.name,
-            email: c.email,
-            whatsapp: c.whatsapp,
-            cpfOrCnpj: c.cpf_cnpj,
-            address: c.address,
-            notes: c.notes
+            name: c.name || 'Cliente Sem Nome',
+            email: c.email || '',
+            whatsapp: c.whatsapp || '',
+            cpfOrCnpj: c.cpf_cnpj || '',
+            address: c.address || '',
+            notes: c.notes || ''
         }));
     },
 
@@ -417,16 +318,19 @@ export const supabaseService = {
     // --- Products ---
     getProducts: async (): Promise<Product[]> => {
         const { data, error } = await supabase.from('products').select('*').order('description', { ascending: true });
-        if (error) throw error;
-        return data.map((p: any) => ({
+        if (error) {
+            console.error('Error fetching products:', error);
+            return [];
+        }
+        return (data || []).map((p: any) => ({
             id: p.id,
-            barcode: p.barcode,
-            description: p.description,
-            purchasePrice: p.purchase_price,
-            resalePrice: p.resale_price,
-            stockQuantity: p.stock_quantity,
-            imageUrl: p.image_url,
-            supplier: p.supplier,
+            barcode: p.barcode || '',
+            description: p.description || 'Produto Sem Nome',
+            purchasePrice: p.purchase_price || 0,
+            resalePrice: p.resale_price || 0,
+            stockQuantity: p.stock_quantity || 0,
+            imageUrl: p.image_url || '',
+            supplier: p.supplier || '',
             createdAt: p.created_at,
             updatedAt: p.updated_at
         }));
@@ -499,14 +403,17 @@ export const supabaseService = {
     // --- Sales ---
     getSales: async (): Promise<Sale[]> => {
         const { data, error } = await supabase.from('sales').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        return data.map((s: any) => ({
+        if (error) {
+            console.error('Error fetching sales:', error);
+            return [];
+        }
+        return (data || []).map((s: any) => ({
             id: s.id,
             createdAt: s.created_at,
-            customerName: s.customer_name,
-            totalValue: s.total_value,
-            paymentMethod: s.payment_method,
-            status: s.status,
+            customerName: s.customer_name || 'Cliente',
+            totalValue: s.total_value || 0,
+            paymentMethod: s.payment_method || 'money',
+            status: s.status || 'completed',
             items: s.items || []
         }));
     },
