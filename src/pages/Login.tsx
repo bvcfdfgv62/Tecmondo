@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Lock, Mail, AlertCircle } from 'lucide-react';
 
 const Login: React.FC = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('tecmondo@icloud.com');
+    const [password, setPassword] = useState('202020');
     const [error, setError] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -55,7 +55,7 @@ const Login: React.FC = () => {
                                 </div>
                                 <Input
                                     type="email"
-                                    placeholder="tecmondoinformatica@gmail.com"
+                                    placeholder="tecmondo@icloud.com"
                                     className="pl-10"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}

@@ -16,19 +16,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         // Check local storage on mount
-        const storedAuth = localStorage.getItem('auth_token');
-        if (storedAuth === 'valid_token') {
-            setIsAuthenticated(true);
-            setUser({ name: 'Admin', email: 'tecmondoinformatica@gmail.com' });
+        try {
+            const storedAuth = localStorage.getItem('auth_token');
+            if (storedAuth === 'valid_token') {
+                setIsAuthenticated(true);
+                setUser({ name: 'Admin', email: 'tecmondo@icloud.com' });
+            }
+        } catch (error) {
+            console.error('Erro ao acessar localStorage:', error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     const login = (email: string, password: string) => {
-        if (email === 'tecmondoinformatica@gmail.com' && password === '202020') {
+        if (email === 'tecmondo@icloud.com' && password === '202020') {
             localStorage.setItem('auth_token', 'valid_token');
             setIsAuthenticated(true);
-            setUser({ name: 'Admin', email: 'tecmondoinformatica@gmail.com' });
+            setUser({ name: 'Admin', email: 'tecmondo@icloud.com' });
             return true;
         }
         return false;
