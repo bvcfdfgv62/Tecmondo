@@ -21,16 +21,16 @@ const CashFlow: React.FC = () => {
     refreshData();
   }, []);
 
-  const refreshData = () => {
-    setTransactions(storageService.getTransactions());
-    setStats(storageService.getStats());
+  const refreshData = async () => {
+    setTransactions(await storageService.getTransactions());
+    setStats(await storageService.getKPIs()); // changed from getStats to getKPIs as getStats might not exist in supabaseService
   };
 
-  const handleAddTransaction = (e: React.FormEvent) => {
+  const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTransaction.description || !newTransaction.amount) return;
 
-    storageService.addTransaction({
+    await storageService.addTransaction({
       description: newTransaction.description,
       amount: parseFloat(newTransaction.amount),
       type: newTransaction.type,

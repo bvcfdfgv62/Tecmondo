@@ -21,8 +21,9 @@ const ServiceOrders: React.FC = () => {
         loadOrders();
     }, []);
 
-    const loadOrders = () => {
-        setOrders(storageService.getServiceOrders());
+    const loadOrders = async () => {
+        const data = await storageService.getServiceOrders();
+        setOrders(data);
     };
 
     const filteredOrders = orders.filter(order => {

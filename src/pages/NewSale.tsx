@@ -35,8 +35,11 @@ const NewSale: React.FC = () => {
     const [paymentMethod, setPaymentMethod] = useState<'credit' | 'debit' | 'money' | 'pix'>('pix');
 
     useEffect(() => {
-        setClients(storageService.getClients());
-        setProducts(storageService.getProducts());
+        const loadJava = async () => {
+            setClients(await storageService.getClients());
+            setProducts(await storageService.getProducts());
+        };
+        loadJava();
     }, []);
 
     // Filter Logic
@@ -83,7 +86,7 @@ const NewSale: React.FC = () => {
         setCartItems(cartItems.filter(item => item.id !== id));
     };
 
-    const handleFinalizeSale = () => {
+    const handleFinalizeSale = async () => {
         if (cartItems.length === 0) {
             alert('Adicione produtos ao carrinho.');
             return;
@@ -104,12 +107,12 @@ const NewSale: React.FC = () => {
                 quantity: item.quantity,
                 total: item.total
             })),
-            totalValue: cartItems.reduce((acc, item) => acc + item.total, 0),
+            totalValue: totalCartValue, // Use updated total
             paymentMethod: paymentMethod,
             status: 'completed' as const
         };
 
-        storageService.createSale(saleData);
+        await storageService.createSale(saleData);
         alert('Venda realizada com sucesso!');
         navigate('/dashboard'); // Or maybe a sales history page? for now dashboard is fine
     };

@@ -13,7 +13,11 @@ const Products: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
 
     useEffect(() => {
-        setProducts(storageService.getProducts());
+        const loadProducts = async () => {
+            const data = await storageService.getProducts();
+            setProducts(data);
+        };
+        loadProducts();
     }, []);
 
     const filteredProducts = products.filter(product =>

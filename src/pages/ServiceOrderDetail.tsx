@@ -40,25 +40,32 @@ const ServiceOrderDetail: React.FC = () => {
 
     // Pre-load logic
     useEffect(() => {
-        if (id === 'novo') {
-            const newOrder = storageService.createServiceOrder({});
-            setFormData(newOrder);
-            setLoading(false);
-        } else if (id) {
-            const order = storageService.getServiceOrderById(id);
-            if (order) {
-                setFormData(order);
-                if (order.repairCategory) setSelectedCategory(order.repairCategory);
-            } else {
-                alert('OS não encontrada');
-                navigate('/os');
+        const loadOrder = async () => {
+            if (id === 'novo') {
+                const newOrder = await storageService.createServiceOrder({});
+                setFormData(newOrder);
+                setLoading(false);
+            } else if (id) {
+                const order = await storageService.getServiceOrderById(id);
+                if (order) {
+                    setFormData(order);
+                    if (order.repairCategory) setSelectedCategory(order.repairCategory);
+                } else {
+                    alert('OS não encontrada');
+                    navigate('/os');
+                }
+                setLoading(false);
             }
-            setLoading(false);
-        }
+        };
+        loadOrder();
     }, [id, navigate]);
 
     useEffect(() => {
-        setProducts(storageService.getProducts());
+        const loadProducts = async () => {
+            const prods = await storageService.getProducts();
+            setProducts(prods);
+        };
+        loadProducts();
     }, []);
 
     // Derived state for catalog
@@ -196,22 +203,22 @@ const ServiceOrderDetail: React.FC = () => {
         updateTotals(formData.services, updatedProducts, formData.discount);
     };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         if (formData) {
-            storageService.saveServiceOrder(formData);
+            await storageService.saveServiceOrder(formData);
             navigate(`/os/${formData.id}/imprimir`);
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (formData) {
-            storageService.saveServiceOrder(formData);
+            await storageService.saveServiceOrder(formData);
             alert('Ordem de Serviço salva com sucesso!');
             navigate('/os');
         }
     };
 
-    const handleStatusChange = (newStatus: ServiceOrderStatus) => {
+    const handleStatusChange = async (newStatus: ServiceOrderStatus) => {
         if (!formData) return;
         if (newStatus === 'completed' && formData.totalValue === 0) {
             alert('Não é possível finalizar uma OS com valor total zero.');
@@ -222,7 +229,7 @@ const ServiceOrderDetail: React.FC = () => {
         }
         const updatedOrder = { ...formData, status: newStatus };
         setFormData(updatedOrder);
-        storageService.saveServiceOrder(updatedOrder);
+        await storageService.saveServiceOrder(updatedOrder);
     };
 
     if (loading || !formData) return <div className="p-8 text-white">Carregando...</div>;

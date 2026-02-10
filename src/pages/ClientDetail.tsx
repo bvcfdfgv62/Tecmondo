@@ -16,23 +16,27 @@ const ClientDetail: React.FC = () => {
     const [history, setHistory] = useState<{ orders: ServiceOrder[], budgets: BudgetRequest[] }>({ orders: [], budgets: [] });
 
     useEffect(() => {
-        if (id === 'novo') {
-            const newClient = storageService.createClient({});
-            setClient(newClient);
-            setLoading(false);
-        } else if (id) {
-            const data = storageService.getClientById(id);
-            if (data) {
-                setClient(data);
-                if (data.email) {
-                    setHistory(storageService.getClientHistory(data.email));
+        const loadClient = async () => {
+            if (id === 'novo') {
+                const newClient = await storageService.createClient({});
+                setClient(newClient);
+                setLoading(false);
+            } else if (id) {
+                const data = await storageService.getClientById(id);
+                if (data) {
+                    setClient(data);
+                    if (data.email) {
+                        const history = await storageService.getClientHistory(data.email);
+                        setHistory(history);
+                    }
+                } else {
+                    alert('Cliente não encontrado');
+                    navigate('/clientes');
                 }
-            } else {
-                alert('Cliente não encontrado');
-                navigate('/clientes');
+                setLoading(false);
             }
-            setLoading(false);
-        }
+        };
+        loadClient();
     }, [id, navigate]);
 
     const handleChange = (field: keyof Client, value: string) => {
@@ -41,9 +45,9 @@ const ClientDetail: React.FC = () => {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (client) {
-            storageService.saveClient(client);
+            await storageService.saveClient(client);
             alert('Cliente salvo com sucesso!');
             navigate('/clientes');
         }

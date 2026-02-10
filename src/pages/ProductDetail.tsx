@@ -14,20 +14,23 @@ const ProductDetail: React.FC = () => {
     const [product, setProduct] = useState<Product | null>(null);
 
     useEffect(() => {
-        if (id === 'novo') {
-            const newProduct = storageService.createProduct({});
-            setProduct(newProduct);
-            setLoading(false);
-        } else if (id) {
-            const data = storageService.getProductById(id);
-            if (data) {
-                setProduct(data);
-            } else {
-                alert('Produto não encontrado');
-                navigate('/produtos');
+        const loadProduct = async () => {
+            if (id === 'novo') {
+                const newProduct = await storageService.createProduct({});
+                setProduct(newProduct);
+                setLoading(false);
+            } else if (id) {
+                const data = await storageService.getProductById(id);
+                if (data) {
+                    setProduct(data);
+                } else {
+                    alert('Produto não encontrado');
+                    navigate('/produtos');
+                }
+                setLoading(false);
             }
-            setLoading(false);
-        }
+        };
+        loadProduct();
     }, [id, navigate]);
 
     const handleChange = (field: keyof Product, value: string | number) => {
@@ -48,21 +51,21 @@ const ProductDetail: React.FC = () => {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (product) {
             if (!product.description || !product.barcode) {
                 alert('Preencha a descrição e o código de barras.');
                 return;
             }
-            storageService.saveProduct(product);
+            await storageService.saveProduct(product);
             alert('Produto salvo com sucesso!');
             navigate('/produtos');
         }
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (product && window.confirm('Tem certeza que deseja excluir este produto?')) {
-            storageService.deleteProduct(product.id);
+            await storageService.deleteProduct(product.id);
             navigate('/produtos');
         }
     };

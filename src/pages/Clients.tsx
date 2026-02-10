@@ -13,7 +13,11 @@ const Clients: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
 
     useEffect(() => {
-        setClients(storageService.getClients());
+        const loadClients = async () => {
+            const data = await storageService.getClients();
+            setClients(data);
+        };
+        loadClients();
     }, []);
 
     const filteredClients = clients.filter(client =>
