@@ -11,11 +11,21 @@ const Products: React.FC = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadProducts = async () => {
-            const data = await storageService.getProducts();
-            setProducts(data);
+            try {
+                setLoading(true);
+                const data = await storageService.getProducts();
+                setProducts(data);
+            } catch (err) {
+                console.error('Erro ao carregar produtos:', err);
+                setError('Falha ao carregar produtos. Tente recarregar.');
+            } finally {
+                setLoading(false);
+            }
         };
         loadProducts();
     }, []);
@@ -63,75 +73,89 @@ const Products: React.FC = () => {
                 </div>
             </div>
 
-            {/* Product List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProducts.length > 0 ? (
-                    filteredProducts.map((product) => (
-                        <Card
-                            key={product.id}
-                            className="bg-surface/40 border-white/5 hover:border-primary/30 transition-all cursor-pointer group overflow-hidden"
-                            onClick={() => navigate(`/produtos/${product.id}`)}
-                        >
-                            <CardContent className="p-0">
-                                {/* Image Area */}
-                                <div className="h-32 bg-slate-950 w-full relative border-b border-white/5">
-                                    {product.imageUrl ? (
-                                        <img
-                                            src={product.imageUrl}
-                                            alt={product.description}
-                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                                            loading="lazy"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-800">
-                                            <Package size={48} />
-                                        </div>
-                                    )}
-                                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur px-2 py-0.5 rounded text-xs font-mono text-white border border-white/10">
-                                        QTD: {product.stockQuantity}
-                                    </div>
-                                </div>
+            {/* Error State */}
+            {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-sm flex items-center gap-2">
+                    <span className="font-bold">Erro:</span> {error}
+                </div>
+            )}
 
-                                <div className="p-5 space-y-4">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <p className="text-[10px] text-primary uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
-                                                <Tag size={10} /> {product.barcode || 'S/N'}
-                                            </p>
-                                            <h3 className="font-bold text-white group-hover:text-primary transition-colors line-clamp-2 min-h-[3rem]">
-                                                {product.description}
-                                            </h3>
+            {/* Loading State */}
+            {loading ? (
+                <div className="flex items-center justify-center py-20">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+            ) : (
+                /* Product List */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredProducts.length > 0 ? (
+                        filteredProducts.map((product) => (
+                            <Card
+                                key={product.id}
+                                className="bg-surface/40 border-white/5 hover:border-primary/30 transition-all cursor-pointer group overflow-hidden"
+                                onClick={() => navigate(`/produtos/${product.id}`)}
+                            >
+                                <CardContent className="p-0">
+                                    {/* Image Area */}
+                                    <div className="h-32 bg-slate-950 w-full relative border-b border-white/5">
+                                        {product.imageUrl ? (
+                                            <img
+                                                src={product.imageUrl}
+                                                alt={product.description}
+                                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-800">
+                                                <Package size={48} />
+                                            </div>
+                                        )}
+                                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur px-2 py-0.5 rounded text-xs font-mono text-white border border-white/10">
+                                            QTD: {product.stockQuantity}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 pt-2 border-t border-white/5">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-slate-400 flex items-center gap-1.5">
-                                                <Truck size={14} className="text-primary/70" /> Fornecedor
-                                            </span>
-                                            <span className="text-white truncate max-w-[120px]" title={product.supplier}>{product.supplier || '—'}</span>
+                                    <div className="p-5 space-y-4">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <p className="text-[10px] text-primary uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                                                    <Tag size={10} /> {product.barcode || 'S/N'}
+                                                </p>
+                                                <h3 className="font-bold text-white group-hover:text-primary transition-colors line-clamp-2 min-h-[3rem]">
+                                                    {product.description}
+                                                </h3>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-slate-400 flex items-center gap-1.5">
-                                                <DollarSign size={14} className="text-primary/70" /> Valor Venda
-                                            </span>
-                                            <span className="text-emerald-400 font-bold font-mono">
-                                                R$ {Number(product.resalePrice).toFixed(2)}
-                                            </span>
+
+                                        <div className="space-y-2 pt-2 border-t border-white/5">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-slate-400 flex items-center gap-1.5">
+                                                    <Truck size={14} className="text-primary/70" /> Fornecedor
+                                                </span>
+                                                <span className="text-white truncate max-w-[120px]" title={product.supplier}>{product.supplier || '—'}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-slate-400 flex items-center gap-1.5">
+                                                    <DollarSign size={14} className="text-primary/70" /> Valor Venda
+                                                </span>
+                                                <span className="text-emerald-400 font-bold font-mono">
+                                                    R$ {Number(product.resalePrice).toFixed(2)}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))
-                ) : (
-                    <div className="col-span-full py-20 text-center text-muted-foreground bg-surface/20 rounded border border-white/5 border-dashed">
-                        <Package size={48} className="mx-auto mb-4 opacity-20" />
-                        <p>Nenhum produto encontrado.</p>
-                        {searchTerm && <p className="text-sm">Tente buscar por outro termo.</p>}
-                    </div>
-                )}
-            </div>
+                                </CardContent>
+                            </Card>
+                        ))
+                    ) : (
+                        <div className="col-span-full py-20 text-center text-muted-foreground bg-surface/20 rounded border border-white/5 border-dashed">
+                            <Package size={48} className="mx-auto mb-4 opacity-20" />
+                            <p>Nenhum produto encontrado.</p>
+                            {searchTerm && <p className="text-sm">Tente buscar por outro termo.</p>}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

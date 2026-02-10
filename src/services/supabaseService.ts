@@ -155,6 +155,106 @@ export const supabaseService = {
         }));
     },
 
+    getServiceOrderById: async (id: string): Promise<ServiceOrder | undefined> => {
+        const { data: o, error } = await supabase.from('service_orders').select('*').eq('id', id).single();
+
+        if (error || !o) {
+            console.error('Error fetching service order by ID:', error);
+            return undefined;
+        }
+
+        return {
+            id: o.id,
+            createdAt: o.created_at,
+            status: o.status || 'open',
+            technician: o.technician || '',
+            customerName: o.customer_name || 'Cliente Sem Nome',
+            whatsapp: o.whatsapp || '',
+            email: o.email || '',
+            equipmentType: o.equipment_type || 'Outro',
+            brand: o.brand || '',
+            model: o.model || '',
+            reportedProblem: o.reported_problem || '',
+            entryCondition: o.entry_condition || {},
+            diagnosis: o.diagnosis || '',
+            services: o.services || [],
+            products: o.products || [],
+            discount: o.discount || 0,
+            totalValue: o.total_value || 0,
+            paymentStatus: o.payment_status || 'pending',
+            repairCategory: o.repair_category || undefined,
+            budgetId: undefined
+        };
+    },
+
+    createServiceOrder: async (data: Partial<ServiceOrder>): Promise<ServiceOrder> => {
+        // Use default values for a new OS
+        const { data: newOrder, error } = await supabase.from('service_orders').insert({
+            status: 'open',
+            customer_name: '',
+            equipment_type: 'Outro',
+            entry_condition: {},
+            services: [],
+            products: [],
+            total_value: 0
+        }).select().single();
+
+        if (error) throw error;
+
+        return {
+            id: newOrder.id,
+            createdAt: newOrder.created_at,
+            status: newOrder.status,
+            technician: newOrder.technician || '',
+            customerName: newOrder.customer_name || '',
+            whatsapp: newOrder.whatsapp || '',
+            email: newOrder.email || '',
+            equipmentType: newOrder.equipment_type || 'Outro',
+            brand: newOrder.brand || '',
+            model: newOrder.model || '',
+            reportedProblem: newOrder.reported_problem || '',
+            entryCondition: newOrder.entry_condition || {},
+            services: newOrder.services || [],
+            products: newOrder.products || [],
+            discount: newOrder.discount || 0,
+            totalValue: newOrder.total_value || 0,
+            paymentStatus: newOrder.payment_status || 'pending',
+            budgetId: undefined
+        };
+    },
+
+    saveServiceOrder: async (order: ServiceOrder) => {
+        const { error } = await supabase.from('service_orders').update({
+            status: order.status,
+            technician: order.technician,
+            customer_name: order.customerName,
+            whatsapp: order.whatsapp,
+            email: order.email,
+            equipment_type: order.equipmentType,
+            brand: order.brand,
+            model: order.model,
+            reported_problem: order.reportedProblem,
+            entry_condition: order.entryCondition,
+            diagnosis: order.diagnosis,
+            services: order.services,
+            products: order.products,
+            discount: order.discount,
+            total_value: order.totalValue,
+            payment_status: order.paymentStatus,
+            repair_category: order.repairCategory,
+            updated_at: new Date().toISOString()
+        }).eq('id', order.id);
+
+        if (error) throw error;
+
+        // If completed or paid, maybe register transaction?
+        // User logic might want this elsewhere, but good to keep in mind.
+        if (order.status === 'completed' && order.paymentStatus === 'paid') {
+            // We could auto-generate transaction here if not exists
+            await supabaseService.addTransactionFromOS(order);
+        }
+    },
+
     // ... (rest of methods)
 
     // --- Transactions ---

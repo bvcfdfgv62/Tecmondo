@@ -41,19 +41,26 @@ const ServiceOrderDetail: React.FC = () => {
     // Pre-load logic
     useEffect(() => {
         const loadOrder = async () => {
-            if (id === 'novo') {
-                const newOrder = await storageService.createServiceOrder({});
-                setFormData(newOrder);
-                setLoading(false);
-            } else if (id) {
-                const order = await storageService.getServiceOrderById(id);
-                if (order) {
-                    setFormData(order);
-                    if (order.repairCategory) setSelectedCategory(order.repairCategory);
-                } else {
-                    alert('OS não encontrada');
-                    navigate('/os');
+            try {
+                if (id === 'novo') {
+                    const newOrder = await storageService.createServiceOrder({});
+                    setFormData(newOrder);
+                } else if (id) {
+                    const order = await storageService.getServiceOrderById(id);
+                    if (order) {
+                        setFormData(order);
+                        if (order.repairCategory) setSelectedCategory(order.repairCategory);
+                    } else {
+                        alert('OS não encontrada');
+                        navigate('/os');
+                        return; // Prevent setting loading false on unmounted component if nav happens
+                    }
                 }
+            } catch (error) {
+                console.error('Erro ao carregar OS:', error);
+                alert('Erro ao carregar detalhes da OS.');
+                navigate('/os');
+            } finally {
                 setLoading(false);
             }
         };
@@ -232,7 +239,15 @@ const ServiceOrderDetail: React.FC = () => {
         await storageService.saveServiceOrder(updatedOrder);
     };
 
-    if (loading || !formData) return <div className="p-8 text-white">Carregando...</div>;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!formData) return <div className="p-8 text-white">Carregando dados...</div>;
     const isReadOnly = formData.status === 'completed' || formData.status === 'cancelled';
 
     return (

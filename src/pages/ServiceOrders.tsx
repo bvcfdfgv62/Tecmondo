@@ -16,14 +16,24 @@ const ServiceOrders: React.FC = () => {
     const [orders, setOrders] = useState<ServiceOrder[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<ServiceOrderStatus | 'all'>('all');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         loadOrders();
     }, []);
 
     const loadOrders = async () => {
-        const data = await storageService.getServiceOrders();
-        setOrders(data);
+        try {
+            setLoading(true);
+            const data = await storageService.getServiceOrders();
+            setOrders(data);
+        } catch (err) {
+            console.error('Erro ao carregar OS:', err);
+            setError('Falha ao carregar OS. Tente recarregar.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const filteredOrders = orders.filter(order => {
@@ -110,66 +120,80 @@ const ServiceOrders: React.FC = () => {
                     </select>
                 </div>
 
-                <CardContent className="p-0">
-                    <div className="overflow-auto">
-                        <Table>
-                            <TableHeader className="bg-surface/50">
-                                <TableRow className="border-white/5 hover:bg-transparent">
-                                    <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground w-[100px]">OS Nº</TableHead>
-                                    <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cliente</TableHead>
-                                    <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Equipamento</TableHead>
-                                    <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
-                                    <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data</TableHead>
-                                    <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Ações</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredOrders.length > 0 ? (
-                                    filteredOrders.map((os) => (
-                                        <TableRow key={os.id} className="border-white/5 hover:bg-white/5 group">
-                                            <TableCell className="font-mono text-xs text-muted-foreground group-hover:text-primary transition-colors">
-                                                {os.id}
-                                            </TableCell>
-                                            <TableCell className="font-medium text-white">
-                                                {os.customerName}
-                                            </TableCell>
-                                            <TableCell className="text-slate-300">
-                                                {os.equipmentType} - {os.model}
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className={cn(
-                                                    "px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide border",
-                                                    getStatusColor(os.status)
-                                                )}>
-                                                    {getStatusLabel(os.status)}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground text-xs">
-                                                {new Date(os.createdAt).toLocaleDateString('pt-BR')}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => navigate(`/os/${os.id}`)}
-                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-white"
-                                                >
-                                                    <FileText size={16} />
-                                                </Button>
+                {/* Error State */}
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 mx-4 rounded-sm flex items-center gap-2">
+                        <span className="font-bold">Erro:</span> {error}
+                    </div>
+                )}
+
+                {/* Loading State */}
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    </div>
+                ) : (
+                    <CardContent className="p-0">
+                        <div className="overflow-auto">
+                            <Table>
+                                <TableHeader className="bg-surface/50">
+                                    <TableRow className="border-white/5 hover:bg-transparent">
+                                        <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground w-[100px]">OS Nº</TableHead>
+                                        <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cliente</TableHead>
+                                        <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Equipamento</TableHead>
+                                        <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                                        <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Data</TableHead>
+                                        <TableHead className="text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Ações</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredOrders.length > 0 ? (
+                                        filteredOrders.map((os) => (
+                                            <TableRow key={os.id} className="border-white/5 hover:bg-white/5 group">
+                                                <TableCell className="font-mono text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                                                    {os.id}
+                                                </TableCell>
+                                                <TableCell className="font-medium text-white">
+                                                    {os.customerName}
+                                                </TableCell>
+                                                <TableCell className="text-slate-300">
+                                                    {os.equipmentType} - {os.model}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className={cn(
+                                                        "px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide border",
+                                                        getStatusColor(os.status)
+                                                    )}>
+                                                        {getStatusLabel(os.status)}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">
+                                                    {new Date(os.createdAt).toLocaleDateString('pt-BR')}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => navigate(`/os/${os.id}`)}
+                                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-white"
+                                                    >
+                                                        <FileText size={16} />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                                Nenhuma ordem de serviço encontrada.
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                            Nenhuma ordem de serviço encontrada.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                )}
             </Card>
         </div>
     );

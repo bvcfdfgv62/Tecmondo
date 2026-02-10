@@ -58,6 +58,8 @@ create table if not exists public.service_orders (
     discount numeric default 0,
     total_value numeric default 0,
     payment_status text default 'pending',
+    diagnosis text,
+    repair_category text,
     updated_at timestamptz
 );
 

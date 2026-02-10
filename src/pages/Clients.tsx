@@ -11,11 +11,21 @@ const Clients: React.FC = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [clients, setClients] = useState<Client[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadClients = async () => {
-            const data = await storageService.getClients();
-            setClients(data);
+            try {
+                setLoading(true);
+                const data = await storageService.getClients();
+                setClients(data);
+            } catch (err) {
+                console.error('Erro ao carregar clientes:', err);
+                setError('Falha ao carregar clientes. Verifique sua conexão.');
+            } finally {
+                setLoading(false);
+            }
         };
         loadClients();
     }, []);
@@ -61,56 +71,70 @@ const Clients: React.FC = () => {
                 </div>
             </div>
 
-            {/* Client List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredClients.length > 0 ? (
-                    filteredClients.map((client) => (
-                        <Card
-                            key={client.id}
-                            className="bg-surface/40 border-white/5 hover:border-primary/30 transition-all cursor-pointer group"
-                            onClick={() => navigate(`/clientes/${client.id}`)}
-                        >
-                            <CardContent className="p-5 space-y-4">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-primary font-bold group-hover:scale-110 transition-transform">
-                                            {client.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-white group-hover:text-primary transition-colors">{client.name}</h3>
-                                            <p className="text-xs text-muted-foreground">ID: {client.id}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-xs text-slate-600 bg-slate-950 px-2 py-1 rounded border border-white/5 font-mono">
-                                        {new Date(client.createdAt).toLocaleDateString()}
-                                    </div>
-                                </div>
+            {/* Error State */}
+            {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-sm flex items-center gap-2">
+                    <span className="font-bold">Erro:</span> {error}
+                </div>
+            )}
 
-                                <div className="space-y-2 pt-2 border-t border-white/5">
-                                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <Mail size={14} className="text-primary/70" />
-                                        <span className="truncate">{client.email || '—'}</span>
+            {/* Loading State */}
+            {loading ? (
+                <div className="flex items-center justify-center py-20">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+            ) : (
+                /* Client List */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredClients.length > 0 ? (
+                        filteredClients.map((client) => (
+                            <Card
+                                key={client.id}
+                                className="bg-surface/40 border-white/5 hover:border-primary/30 transition-all cursor-pointer group"
+                                onClick={() => navigate(`/clientes/${client.id}`)}
+                            >
+                                <CardContent className="p-5 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-primary font-bold group-hover:scale-110 transition-transform">
+                                                {client.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-white group-hover:text-primary transition-colors">{client.name}</h3>
+                                                <p className="text-xs text-muted-foreground">ID: {client.id}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-slate-600 bg-slate-950 px-2 py-1 rounded border border-white/5 font-mono">
+                                            {new Date(client.createdAt).toLocaleDateString()}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <Phone size={14} className="text-primary/70" />
-                                        <span>{client.whatsapp || '—'}</span>
+
+                                    <div className="space-y-2 pt-2 border-t border-white/5">
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <Mail size={14} className="text-primary/70" />
+                                            <span className="truncate">{client.email || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <Phone size={14} className="text-primary/70" />
+                                            <span>{client.whatsapp || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                                            <FileText size={14} className="text-primary/70" />
+                                            <span>{client.cpfOrCnpj || '—'}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                                        <FileText size={14} className="text-primary/70" />
-                                        <span>{client.cpfOrCnpj || '—'}</span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))
-                ) : (
-                    <div className="col-span-full py-20 text-center text-muted-foreground bg-surface/20 rounded border border-white/5 border-dashed">
-                        <User size={48} className="mx-auto mb-4 opacity-20" />
-                        <p>Nenhum cliente encontrado.</p>
-                        {searchTerm && <p className="text-sm">Tente buscar por outro termo.</p>}
-                    </div>
-                )}
-            </div>
+                                </CardContent>
+                            </Card>
+                        ))
+                    ) : (
+                        <div className="col-span-full py-20 text-center text-muted-foreground bg-surface/20 rounded border border-white/5 border-dashed">
+                            <User size={48} className="mx-auto mb-4 opacity-20" />
+                            <p>Nenhum cliente encontrado.</p>
+                            {searchTerm && <p className="text-sm">Tente buscar por outro termo.</p>}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
