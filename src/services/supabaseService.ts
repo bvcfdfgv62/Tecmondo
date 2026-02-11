@@ -385,7 +385,7 @@ export const supabaseService = {
     saveClient: async (client: Client): Promise<ApiResponse<void>> => {
         const { error } = await supabase.from('clients').upsert({
             id: client.id.length < 10 ? undefined : client.id, // Handle legacy IDs vs UUIDs
-            updated_at: new Date().toISOString(),
+            // updated_at removed as column does not exist in schema
             name: client.name,
             email: client.email,
             whatsapp: client.whatsapp,
