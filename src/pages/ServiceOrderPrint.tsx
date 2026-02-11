@@ -55,161 +55,159 @@ const ServiceOrderPrint: React.FC = () => {
                     </div>
                 </div>
 
-            </div>
+                {/* Equipamento */}
+                <div className="border border-slate-200 rounded p-4">
+                    <h3 className="font-bold uppercase text-xs text-slate-500 mb-3 border-b pb-1">Equipamento</h3>
+                    <div className="space-y-1 text-sm">
+                        <p><span className="font-semibold">Tipo:</span> {order.equipmentType}</p>
+                        <p><span className="font-semibold">Marca/Modelo:</span> {order.brand} - {order.model}</p>
+                        <p><span className="font-semibold">Nº Série:</span> {order.serialNumber || 'N/A'}</p>
+                        <div className="mt-2 text-xs flex flex-wrap gap-2 text-slate-600">
+                            {order.entryCondition.turnOn && <span className="border px-1 rounded">Liga</span>}
+                            {order.entryCondition.brokenScreen && <span className="border px-1 rounded">Tela Quebrada</span>}
+                            {order.entryCondition.noAccessories && <span className="border px-1 rounded">Sem Acessórios</span>}
+                            {order.entryCondition.hasPassword && <span className="border px-1 rounded">Com Senha</span>}
+                        </div>
 
-            {/* Equipamento */}
-            <div className="border border-slate-200 rounded p-4">
-                <h3 className="font-bold uppercase text-xs text-slate-500 mb-3 border-b pb-1">Equipamento</h3>
-                <div className="space-y-1 text-sm">
-                    <p><span className="font-semibold">Tipo:</span> {order.equipmentType}</p>
-                    <p><span className="font-semibold">Marca/Modelo:</span> {order.brand} - {order.model}</p>
-                    <p><span className="font-semibold">Nº Série:</span> {order.serialNumber || 'N/A'}</p>
-                    <div className="mt-2 text-xs flex flex-wrap gap-2 text-slate-600">
-                        {order.entryCondition.turnOn && <span className="border px-1 rounded">Liga</span>}
-                        {order.entryCondition.brokenScreen && <span className="border px-1 rounded">Tela Quebrada</span>}
-                        {order.entryCondition.noAccessories && <span className="border px-1 rounded">Sem Acessórios</span>}
-                        {order.entryCondition.hasPassword && <span className="border px-1 rounded">Com Senha</span>}
-                    </div>
-
-                    {/* Pattern Lock Display */}
-                    {order.patternPassword && (
-                        <div className="mt-4 border-t pt-2">
-                            <p className="text-xs font-bold text-slate-500 mb-1">Padrão de Desbloqueio:</p>
-                            <div className="w-24 h-24 border rounded bg-slate-50">
-                                <PatternLock
-                                    initialValue={order.patternPassword}
-                                    readOnly={true}
-                                    size={96}
-                                />
+                        {/* Pattern Lock Display */}
+                        {order.patternPassword && (
+                            <div className="mt-4 border-t pt-2">
+                                <p className="text-xs font-bold text-slate-500 mb-1">Padrão de Desbloqueio:</p>
+                                <div className="w-24 h-24 border rounded bg-slate-50">
+                                    <PatternLock
+                                        initialValue={order.patternPassword}
+                                        readOnly={true}
+                                        size={96}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    )}
-                    {order.entryCondition.password && (
-                        <p className="mt-2 text-xs"><span className="font-semibold">Senha Texto:</span> {order.entryCondition.password}</p>
-                    )}
+                        )}
+                        {order.entryCondition.password && (
+                            <p className="mt-2 text-xs"><span className="font-semibold">Senha Texto:</span> {order.entryCondition.password}</p>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
 
-            {/* Problema e Diagnóstico */ }
-    <div className="mb-8 space-y-4">
-        <div className="border border-slate-200 rounded p-4 bg-slate-50">
-            <h3 className="font-bold uppercase text-xs text-slate-500 mb-2">Problema Relatado</h3>
-            <p className="text-sm italic text-slate-700">"{order.reportedProblem}"</p>
-        </div>
+            {/* Problema e Diagnóstico */}
+            <div className="mb-8 space-y-4">
+                <div className="border border-slate-200 rounded p-4 bg-slate-50">
+                    <h3 className="font-bold uppercase text-xs text-slate-500 mb-2">Problema Relatado</h3>
+                    <p className="text-sm italic text-slate-700">"{order.reportedProblem}"</p>
+                </div>
 
-        {order.diagnosis && (
-            <div className="border border-slate-200 rounded p-4">
-                <h3 className="font-bold uppercase text-xs text-slate-500 mb-2">Diagnóstico Técnico</h3>
-                <p className="text-sm text-slate-800">{order.diagnosis}</p>
+                {order.diagnosis && (
+                    <div className="border border-slate-200 rounded p-4">
+                        <h3 className="font-bold uppercase text-xs text-slate-500 mb-2">Diagnóstico Técnico</h3>
+                        <p className="text-sm text-slate-800">{order.diagnosis}</p>
+                    </div>
+                )}
             </div>
-        )}
-    </div>
 
-    {/* Serviços */ }
-    <div className="mb-8">
-        <h3 className="font-bold uppercase text-xs text-slate-500 mb-2">Serviços Executados / Peças</h3>
-        <table className="w-full text-sm text-left border-collapse">
-            <thead>
-                <tr className="border-b-2 border-slate-800">
-                    <th className="py-2">Descrição</th>
-                    <th className="py-2 text-right w-32">Valor</th>
-                </tr>
-            </thead>
-            <tbody>
-                {order.services.map((item) => (
-                    <tr key={item.id} className="border-b border-slate-200">
-                        <td className="py-2">{item.description}</td>
-                        <td className="py-2 text-right text-slate-600">R$ {item.value.toFixed(2)}</td>
-                    </tr>
-                ))}
-                {order.services.length === 0 && (
-                    <tr><td colSpan={2} className="py-4 text-center text-slate-400">Nenhum serviço lançado.</td></tr>
-                )}
-            </tbody>
-            <tfoot className="font-bold">
-                <tr>
-                    <td className="py-2 text-right pt-4">Subtotal:</td>
-                    <td className="py-2 text-right pt-4">R$ {order.services.reduce((a, b) => a + b.value, 0).toFixed(2)}</td>
-                </tr>
-                {order.discount > 0 && (
-                    <tr className="text-red-600">
-                        <td className="py-1 text-right">Desconto:</td>
-                        <td className="py-1 text-right">- R$ {order.discount.toFixed(2)}</td>
-                    </tr>
-                )}
-                <tr className="text-lg">
-                    <td className="py-2 text-right">Total:</td>
-                    <td className="py-2 text-right">R$ {order.totalValue.toFixed(2)}</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+            {/* Serviços */}
+            <div className="mb-8">
+                <h3 className="font-bold uppercase text-xs text-slate-500 mb-2">Serviços Executados / Peças</h3>
+                <table className="w-full text-sm text-left border-collapse">
+                    <thead>
+                        <tr className="border-b-2 border-slate-800">
+                            <th className="py-2">Descrição</th>
+                            <th className="py-2 text-right w-32">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {order.services.map((item) => (
+                            <tr key={item.id} className="border-b border-slate-200">
+                                <td className="py-2">{item.description}</td>
+                                <td className="py-2 text-right text-slate-600">R$ {item.value.toFixed(2)}</td>
+                            </tr>
+                        ))}
+                        {order.services.length === 0 && (
+                            <tr><td colSpan={2} className="py-4 text-center text-slate-400">Nenhum serviço lançado.</td></tr>
+                        )}
+                    </tbody>
+                    <tfoot className="font-bold">
+                        <tr>
+                            <td className="py-2 text-right pt-4">Subtotal:</td>
+                            <td className="py-2 text-right pt-4">R$ {order.services.reduce((a, b) => a + b.value, 0).toFixed(2)}</td>
+                        </tr>
+                        {order.discount > 0 && (
+                            <tr className="text-red-600">
+                                <td className="py-1 text-right">Desconto:</td>
+                                <td className="py-1 text-right">- R$ {order.discount.toFixed(2)}</td>
+                            </tr>
+                        )}
+                        <tr className="text-lg">
+                            <td className="py-2 text-right">Total:</td>
+                            <td className="py-2 text-right">R$ {order.totalValue.toFixed(2)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
-    {/* Fotos do Aparelho */ }
-    {
-        (order.imgBeforeFront || order.imgBeforeBack || order.imgAfterFront || order.imgAfterBack) && (
-            <div className="mb-8 break-inside-avoid">
-                <h3 className="font-bold uppercase text-xs text-slate-500 mb-2">Fotos do Aparelho</h3>
-                <div className="grid grid-cols-4 gap-4">
-                    {order.imgBeforeFront && (
-                        <div className="border rounded p-1">
-                            <p className="text-[10px] text-center mb-1 text-slate-500">Frente (Entrada)</p>
-                            <img src={order.imgBeforeFront} className="w-full h-32 object-cover rounded" alt="Frente Quebrado" />
+            {/* Fotos do Aparelho */}
+            {
+                (order.imgBeforeFront || order.imgBeforeBack || order.imgAfterFront || order.imgAfterBack) && (
+                    <div className="mb-8 break-inside-avoid">
+                        <h3 className="font-bold uppercase text-xs text-slate-500 mb-2">Fotos do Aparelho</h3>
+                        <div className="grid grid-cols-4 gap-4">
+                            {order.imgBeforeFront && (
+                                <div className="border rounded p-1">
+                                    <p className="text-[10px] text-center mb-1 text-slate-500">Frente (Entrada)</p>
+                                    <img src={order.imgBeforeFront} className="w-full h-32 object-cover rounded" alt="Frente Quebrado" />
+                                </div>
+                            )}
+                            {order.imgBeforeBack && (
+                                <div className="border rounded p-1">
+                                    <p className="text-[10px] text-center mb-1 text-slate-500">Trás (Entrada)</p>
+                                    <img src={order.imgBeforeBack} className="w-full h-32 object-cover rounded" alt="Trás Quebrado" />
+                                </div>
+                            )}
+                            {order.imgAfterFront && (
+                                <div className="border rounded p-1">
+                                    <p className="text-[10px] text-center mb-1 text-slate-500">Frente (Saída)</p>
+                                    <img src={order.imgAfterFront} className="w-full h-32 object-cover rounded" alt="Frente Reparado" />
+                                </div>
+                            )}
+                            {order.imgAfterBack && (
+                                <div className="border rounded p-1">
+                                    <p className="text-[10px] text-center mb-1 text-slate-500">Trás (Saída)</p>
+                                    <img src={order.imgAfterBack} className="w-full h-32 object-cover rounded" alt="Trás Reparado" />
+                                </div>
+                            )}
                         </div>
-                    )}
-                    {order.imgBeforeBack && (
-                        <div className="border rounded p-1">
-                            <p className="text-[10px] text-center mb-1 text-slate-500">Trás (Entrada)</p>
-                            <img src={order.imgBeforeBack} className="w-full h-32 object-cover rounded" alt="Trás Quebrado" />
-                        </div>
-                    )}
-                    {order.imgAfterFront && (
-                        <div className="border rounded p-1">
-                            <p className="text-[10px] text-center mb-1 text-slate-500">Frente (Saída)</p>
-                            <img src={order.imgAfterFront} className="w-full h-32 object-cover rounded" alt="Frente Reparado" />
-                        </div>
-                    )}
-                    {order.imgAfterBack && (
-                        <div className="border rounded p-1">
-                            <p className="text-[10px] text-center mb-1 text-slate-500">Trás (Saída)</p>
-                            <img src={order.imgAfterBack} className="w-full h-32 object-cover rounded" alt="Trás Reparado" />
-                        </div>
-                    )}
+                    </div>
+                )
+            }
+
+            {/* Footer / Termos */}
+            <div className="text-xs text-slate-500 text-justify mb-12 border-t pt-4">
+                <p>
+                    <strong>Garantia legal de 90 dias</strong> sobre os serviços prestados e peças substituídas,
+                    conforme Código de Defesa do Consumidor. A garantia não cobre danos causados por mau uso,
+                    quedas, líquidos, oscilações elétricas ou intervenção de terceiros.
+                    Equipamentos não retirados em até 90 dias serão considerados abandonados e descartados.
+                </p>
+            </div>
+
+            {/* Assinaturas */}
+            <div className="flex justify-between pt-10">
+                <div className="w-[40%] text-center border-t border-slate-400 pt-2">
+                    <p className="font-bold text-sm">Tec Mondo</p>
+                    <p className="text-xs text-slate-500">Técnico Responsável</p>
+                </div>
+                <div className="w-[40%] text-center border-t border-slate-400 pt-2">
+                    <p className="font-bold text-sm">{order.customerName}</p>
+                    <p className="text-xs text-slate-500">Cliente</p>
                 </div>
             </div>
-        )
-    }
 
-    {/* Footer / Termos */ }
-    <div className="text-xs text-slate-500 text-justify mb-12 border-t pt-4">
-        <p>
-            <strong>Garantia legal de 90 dias</strong> sobre os serviços prestados e peças substituídas,
-            conforme Código de Defesa do Consumidor. A garantia não cobre danos causados por mau uso,
-            quedas, líquidos, oscilações elétricas ou intervenção de terceiros.
-            Equipamentos não retirados em até 90 dias serão considerados abandonados e descartados.
-        </p>
-    </div>
-
-    {/* Assinaturas */ }
-    <div className="flex justify-between pt-10">
-        <div className="w-[40%] text-center border-t border-slate-400 pt-2">
-            <p className="font-bold text-sm">Tec Mondo</p>
-            <p className="text-xs text-slate-500">Técnico Responsável</p>
-        </div>
-        <div className="w-[40%] text-center border-t border-slate-400 pt-2">
-            <p className="font-bold text-sm">{order.customerName}</p>
-            <p className="text-xs text-slate-500">Cliente</p>
-        </div>
-    </div>
-
-    {/* Botão Voltar (Escondido na impressão) */ }
-    <button
-        onClick={() => window.close()}
-        className="fixed bottom-8 right-8 bg-slate-900 text-white px-6 py-3 rounded shadow-lg print:hidden hover:bg-slate-800"
-    >
-        Fechar
-    </button>
+            {/* Botão Voltar (Escondido na impressão) */}
+            <button
+                onClick={() => window.close()}
+                className="fixed bottom-8 right-8 bg-slate-900 text-white px-6 py-3 rounded shadow-lg print:hidden hover:bg-slate-800"
+            >
+                Fechar
+            </button>
         </div >
     );
 };
