@@ -55,11 +55,11 @@ export function ImageUpload({ orderId, images, onImagesChange, readOnly = false 
                 });
             } else {
                 console.error('Upload failed:', response.error);
-                alert('Erro ao enviar imagem. Tente novamente.');
+                alert(`Erro ao enviar imagem: ${response.error || 'Erro desconhecido'}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Upload error:', error);
-            alert('Erro inesperado ao enviar imagem.');
+            alert(`Erro inesperado ao enviar imagem: ${error.message || error}`);
         } finally {
             setUploading(null);
         }
