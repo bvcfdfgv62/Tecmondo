@@ -42,8 +42,7 @@
 
 @page {
   size: A4 portrait;
-  margin: 0;
-  /* Let print-container handle internal margins */
+  margin: 20mm;
 }
 
 @media print {
@@ -53,59 +52,50 @@
     color: black !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
   }
 
   .no-print {
     display: none !important;
   }
 
-  /* Force visibility for specific print container */
   .print-container {
-    display: block !important;
-    visibility: visible !important;
-    background-color: white !important;
-    color: black !important;
-
-    /* A4 Dimensions */
-    width: 210mm !important;
-    min-height: 297mm !important;
-    padding: 20mm !important;
-    margin: 0 auto !important;
-
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    z-index: 9999 !important;
-
-    font-family: Arial, sans-serif !important;
-    font-size: 12px !important;
+    width: 210mm;
+    /* Fixed width for visual consistency */
+    min-height: 297mm;
+    padding: 0;
+    /* Margin handled by @page, but we can add internal padding if needed, user asked for 20mm margin in @page */
+    background: white;
+    color: black;
+    margin: 0 auto;
+    /* Center it */
   }
 
-  /* Reset all dark mode overrides */
-  .dark .print-container,
-  .print-container * {
-    background-color: white !important;
+  /* Reset */
+  * {
     color: black !important;
-    border-color: #000 !important;
+    text-shadow: none !important;
     box-shadow: none !important;
   }
 
-  /* Text Colors */
-  .print-container h1,
-  .print-container h2,
-  .print-container h3,
-  .print-container strong,
-  .print-container p {
-    color: black !important;
+  /* Allow specific colors for the premium look - override the * black force for specific colored elements if browser supports */
+  .print-color-blue {
+    color: #1e3a8a !important;
+    /* Blue-900 */
+    border-color: #1e3a8a !important;
+  }
+
+  .print-color-red {
+    color: #dc2626 !important;
+    /* Red-600 */
+  }
+
+  .print-bg-gray {
+    background-color: #f9fafb !important;
+    /* Gray-50 */
   }
 
   /* Hide everything else */
   body>*:not(.print-container) {
     display: none !important;
   }
-
-  /* Remove browser default headers/footers if possible (controlled by user settings usually, but we try) */
 }

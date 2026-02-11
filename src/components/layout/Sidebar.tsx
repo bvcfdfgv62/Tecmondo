@@ -49,12 +49,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                 mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             )}>
                 {/* Header da Sidebar */}
-                <div className="h-16 flex items-center px-6 border-b border-white/5 bg-surface/30">
-                    <Link to="/" className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity cursor-pointer">
-                        <div className="w-8 h-8 rounded-sm bg-primary/20 flex items-center justify-center">
-                            <span className="font-bold text-lg">T</span>
+                <div className="h-20 flex items-center justify-center border-b border-white/5 bg-surface/30">
+                    <Link to="/" className="flex flex-col items-center gap-1 text-primary hover:opacity-80 transition-opacity cursor-pointer">
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                            <img src="/logo.jpg" alt="Tec Mondo" className="w-full h-full object-contain p-1" />
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-white">TEC MONDO</span>
+                        <span className="text-sm font-bold tracking-tight text-white uppercase">TEC MONDO</span>
                     </Link>
                 </div>
 

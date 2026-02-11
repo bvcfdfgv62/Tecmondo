@@ -31,12 +31,12 @@ const Login: React.FC = () => {
             <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-[96px] pointer-events-none" />
 
             <Card className="w-full max-w-md mx-4 border-white/10 shadow-2xl animate-scale-in backdrop-blur-md bg-surface/50">
-                <CardHeader className="text-center space-y-2">
-                    <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2">
-                        <Lock size={24} />
+                <CardHeader className="text-center space-y-2 flex flex-col items-center">
+                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center overflow-hidden mb-4 shadow-lg ring-4 ring-primary/20">
+                        <img src="/logo.jpg" alt="Tec Mondo" className="w-full h-full object-contain p-2" />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-white tracking-tight">TEC MONDO</CardTitle>
-                    <CardDescription>Acesse o painel administrativo</CardDescription>
+                    {/* <CardTitle className="text-2xl font-bold text-white tracking-tight">TEC MONDO</CardTitle> */}
+                    <CardDescription className="text-lg">Acesse o painel administrativo</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
