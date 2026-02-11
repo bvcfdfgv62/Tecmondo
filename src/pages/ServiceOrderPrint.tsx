@@ -75,7 +75,7 @@ const ServiceOrderPrint: React.FC = () => {
         };
 
         return (
-            <span className={`px - 3 py - 1 rounded text - xs font - bold uppercase tracking - wide border print - bg - gray print - color - blue ${ colors[status] || 'bg-gray-100 text-gray-800' } `}>
+            <span className={`px - 3 py - 1 rounded text - xs font - bold uppercase tracking - wide border print: bg - gray - 200 print: text - blue - 900 ${ colors[status] || 'bg-gray-100 text-gray-800' } `}>
                 {labels[status] || status}
             </span>
         );
@@ -106,7 +106,7 @@ const ServiceOrderPrint: React.FC = () => {
                         <StatusBadge status={order.status} />
                     </div>
                     <div className="mt-4 text-xs text-slate-500 font-medium space-y-1">
-                         <div className="flex items-centerjustify-end gap-1">
+                         <div className="flex items-center justify-end gap-1">
                             <Calendar size={12} /> Entrada: {new Date(order.createdAt).toLocaleDateString()}
                          </div>
                          {order.deadline && (
