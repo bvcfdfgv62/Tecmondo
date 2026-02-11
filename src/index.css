@@ -40,6 +40,12 @@
   }
 }
 
+@page {
+  size: A4 portrait;
+  margin: 0;
+  /* Let print-container handle internal margins */
+}
+
 @media print {
   body {
     background-color: white !important;
@@ -47,6 +53,9 @@
     color: black !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
 
   .no-print {
@@ -59,14 +68,20 @@
     visibility: visible !important;
     background-color: white !important;
     color: black !important;
-    width: 100% !important;
-    height: auto !important;
+
+    /* A4 Dimensions */
+    width: 210mm !important;
+    min-height: 297mm !important;
+    padding: 20mm !important;
+    margin: 0 auto !important;
+
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
-    margin: 0 !important;
-    padding: 20px !important;
     z-index: 9999 !important;
+
+    font-family: Arial, sans-serif !important;
+    font-size: 12px !important;
   }
 
   /* Reset all dark mode overrides */
@@ -74,16 +89,16 @@
   .print-container * {
     background-color: white !important;
     color: black !important;
-    border-color: #e2e8f0 !important;
-    /* slate-200 */
+    border-color: #000 !important;
     box-shadow: none !important;
   }
 
-  /* Keep specific colored elements if needed, but safer to force black/white for text */
+  /* Text Colors */
   .print-container h1,
   .print-container h2,
   .print-container h3,
-  .print-container strong {
+  .print-container strong,
+  .print-container p {
     color: black !important;
   }
 
@@ -91,4 +106,6 @@
   body>*:not(.print-container) {
     display: none !important;
   }
+
+  /* Remove browser default headers/footers if possible (controlled by user settings usually, but we try) */
 }
