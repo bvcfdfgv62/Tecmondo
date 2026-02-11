@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, User, Bell, Shield, Palette, Save, Check } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, Palette, Save, Check, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Settings: React.FC = () => {
@@ -17,22 +17,59 @@ const Settings: React.FC = () => {
         address: ''
     });
     const [saved, setSaved] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
 
     useEffect(() => {
-        const loaded = storageService.getSettings();
-        setSettings(loaded);
+        loadSettings();
     }, []);
+
+    const loadSettings = async () => {
+        try {
+            setInitialLoading(true);
+            const response = await storageService.getSettings();
+            if (response.success && response.data) {
+                setSettings(response.data);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar configurações:", error);
+        } finally {
+            setInitialLoading(false);
+        }
+    };
 
     const handleChange = (field: keyof SystemSettings, value: string) => {
         setSettings(prev => ({ ...prev, [field]: value }));
         setSaved(false);
     };
 
-    const handleSave = () => {
-        storageService.saveSettings(settings);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+    const handleSave = async () => {
+        try {
+            setLoading(true);
+            const response = await storageService.saveSettings(settings);
+
+            if (response.success) {
+                setSaved(true);
+                setTimeout(() => setSaved(false), 3000);
+            } else {
+                console.error("Erro ao salvar:", response.error);
+                alert("Erro ao salvar configurações. Tente novamente.");
+            }
+        } catch (error) {
+            console.error("Erro crítico ao salvar:", error);
+            alert("Erro crítico ao salvar.");
+        } finally {
+            setLoading(false);
+        }
     };
+
+    if (initialLoading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-fade-in text-text-primary pb-20">
@@ -69,6 +106,7 @@ const Settings: React.FC = () => {
                                         value={settings.companyName}
                                         onChange={(e) => handleChange('companyName', e.target.value)}
                                         className="bg-slate-950 border-slate-700 text-white"
+                                        placeholder="Ex: TecMondo Assistência"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -77,6 +115,7 @@ const Settings: React.FC = () => {
                                         value={settings.cnpj}
                                         onChange={(e) => handleChange('cnpj', e.target.value)}
                                         className="bg-slate-950 border-slate-700 text-white"
+                                        placeholder="00.000.000/0001-00"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -85,6 +124,7 @@ const Settings: React.FC = () => {
                                         value={settings.phone}
                                         onChange={(e) => handleChange('phone', e.target.value)}
                                         className="bg-slate-950 border-slate-700 text-white"
+                                        placeholder="(00) 00000-0000"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -93,6 +133,7 @@ const Settings: React.FC = () => {
                                         value={settings.email}
                                         onChange={(e) => handleChange('email', e.target.value)}
                                         className="bg-slate-950 border-slate-700 text-white"
+                                        placeholder="contato@empresa.com"
                                     />
                                 </div>
                             </div>
@@ -102,14 +143,18 @@ const Settings: React.FC = () => {
                                     value={settings.address}
                                     onChange={(e) => handleChange('address', e.target.value)}
                                     className="bg-slate-950 border-slate-700 text-white"
+                                    placeholder="Rua, Número, Bairro, Cidade - UF"
                                 />
                             </div>
                             <div className="pt-4 flex justify-end">
                                 <Button
                                     onClick={handleSave}
-                                    className={`transition-all ${saved ? 'bg-green-600 hover:bg-green-600' : 'bg-primary hover:bg-primary-hover'}`}
+                                    disabled={loading}
+                                    className={`transition-all min-w-[140px] ${saved ? 'bg-green-600 hover:bg-green-600' : 'bg-primary hover:bg-primary-hover'}`}
                                 >
-                                    {saved ? (
+                                    {loading ? (
+                                        <><Loader2 size={18} className="mr-2 animate-spin" /> Salvando...</>
+                                    ) : saved ? (
                                         <><Check size={18} className="mr-2" /> Salvo!</>
                                     ) : (
                                         <><Save size={18} className="mr-2" /> Salvar Alterações</>

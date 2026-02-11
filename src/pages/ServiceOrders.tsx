@@ -153,66 +153,69 @@ const ServiceOrders: React.FC = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredOrders.length > 0 ? (
-                                        filteredOrders.map((os) => (
-                                            <TableRow key={os.id} className="border-white/5 hover:bg-white/5 group">
-                                                <TableCell className="font-mono text-xs text-muted-foreground group-hover:text-primary transition-colors">
-                                                    {os.id}
-                                                </TableCell>
-                                                <TableCell className="font-medium text-white">
-                                                    {os.customerName}
-                                                </TableCell>
-                                                <TableCell className="text-slate-300">
-                                                    {os.equipmentType} - {os.model}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <span className={cn(
-                                                        "px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide border",
-                                                        getStatusColor(os.status)
-                                                    )}>
-                                                        {getStatusLabel(os.status)}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground text-xs">
-                                                    {new Date(os.createdAt).toLocaleDateString('pt-BR')}
-                                                </TableCell>
-                                                <TableCell className="text-right flex justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => navigate(`/os/${os.id}`)}
-                                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-white"
-                                                        title="Ver Detalhes"
-                                                    >
-                                                        <FileText size={16} />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            if (window.confirm('Tem certeza que deseja excluir esta OS?')) {
-                                                                try {
-                                                                    const response = await storageService.deleteServiceOrder(os.id);
-                                                                    if (response.success) {
-                                                                        loadOrders();
-                                                                    } else {
-                                                                        alert(`Erro ao excluir: ${response.error}`);
+                                    {(filteredOrders && filteredOrders.length > 0) ? (
+                                        filteredOrders.map((os) => {
+                                            if (!os) return null; // Defensive check for null items
+                                            return (
+                                                <TableRow key={os.id || Math.random()} className="border-white/5 hover:bg-white/5 group">
+                                                    <TableCell className="font-mono text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                                                        {os.id ? os.id.substring(0, 8) : 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell className="font-medium text-white">
+                                                        {os.customerName || 'Cliente não informado'}
+                                                    </TableCell>
+                                                    <TableCell className="text-slate-300">
+                                                        {os.equipmentType || 'Outro'} - {os.model || ''}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className={cn(
+                                                            "px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide border",
+                                                            getStatusColor(os.status || 'open')
+                                                        )}>
+                                                            {getStatusLabel(os.status || 'open')}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground text-xs">
+                                                        {os.createdAt ? new Date(os.createdAt).toLocaleDateString('pt-BR') : '-'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right flex justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => navigate(`/os/${os.id}`)}
+                                                            className="h-8 w-8 p-0 text-muted-foreground hover:text-white"
+                                                            title="Ver Detalhes"
+                                                        >
+                                                            <FileText size={16} />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm('Tem certeza que deseja excluir esta OS?')) {
+                                                                    try {
+                                                                        const response = await storageService.deleteServiceOrder(os.id);
+                                                                        if (response.success) {
+                                                                            loadOrders();
+                                                                        } else {
+                                                                            alert(`Erro ao excluir: ${response.error}`);
+                                                                        }
+                                                                    } catch (error) {
+                                                                        console.error('Erro ao excluir OS:', error);
+                                                                        alert('Erro ao excluir OS.');
                                                                     }
-                                                                } catch (error) {
-                                                                    console.error('Erro ao excluir OS:', error);
-                                                                    alert('Erro ao excluir OS.');
                                                                 }
-                                                            }
-                                                        }}
-                                                        className="h-8 w-8 p-0 text-red-500/70 hover:text-red-500 hover:bg-red-500/10"
-                                                        title="Excluir OS"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
+                                                            }}
+                                                            className="h-8 w-8 p-0 text-red-500/70 hover:text-red-500 hover:bg-red-500/10"
+                                                            title="Excluir OS"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
                                     ) : (
                                         <TableRow>
                                             <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
