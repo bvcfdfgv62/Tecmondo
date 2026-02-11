@@ -15,6 +15,8 @@ import Settings from './pages/Settings';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import NewSale from './pages/NewSale';
+import Services from './pages/Services';
+import ProductReport from './pages/ProductReport';
 import { AdminLayout } from './layouts/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -103,6 +105,22 @@ const App: React.FC = () => {
           <ProtectedRoute>
             <AdminLayout>
               <NewSale />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/servicos" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <Services />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/relatorio-produtos" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <ProductReport />
             </AdminLayout>
           </ProtectedRoute>
         } />

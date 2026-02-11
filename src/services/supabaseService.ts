@@ -10,7 +10,8 @@ import {
     Client,
     SystemSettings,
     CashFlowStats,
-    ApiResponse
+    ApiResponse,
+    ServiceCatalogItem
 } from '../types';
 
 const createResponse = <T>(data: T | null, error: any): ApiResponse<T> => {
@@ -626,6 +627,50 @@ export const supabaseService = {
 
     deleteProduct: async (id: string): Promise<ApiResponse<void>> => {
         const { error } = await supabase.from('products').delete().eq('id', id);
+        return createResponse(null, error);
+    },
+
+    // --- Service Catalog ---
+    getServiceCatalog: async (): Promise<ApiResponse<ServiceCatalogItem[]>> => {
+        // Try to fetch from a dedicated table 'service_catalog'
+        // If it doesn't exist, we might need to create it or just return mock data for now?
+        // User asked to "List all services registered", implies peristence.
+        // Let's assume a 'service_catalog' table exists or we use 'services' generic table if schema allows.
+        // Given the prompt, I'll assume we map to 'service_catalog'.
+
+        const { data, error } = await supabase.from('service_catalog').select('*').order('description', { ascending: true });
+
+        if (error) {
+            // Fallback if table doesn't exist yet, return empty or handle error
+            return createResponse(null, error);
+        }
+
+        const services = (data || []).map((s: any) => ({
+            id: s.id,
+            code: s.code,
+            category: s.category,
+            description: s.description,
+            value: s.value,
+            active: s.active !== false
+        }));
+
+        return createResponse(services, null);
+    },
+
+    saveServiceCatalogItem: async (item: ServiceCatalogItem): Promise<ApiResponse<void>> => {
+        const { error } = await supabase.from('service_catalog').upsert({
+            id: item.id,
+            code: item.code,
+            category: item.category,
+            description: item.description,
+            value: item.value,
+            active: item.active
+        });
+        return createResponse(null, error);
+    },
+
+    deleteServiceCatalogItem: async (id: string): Promise<ApiResponse<void>> => {
+        const { error } = await supabase.from('service_catalog').delete().eq('id', id);
         return createResponse(null, error);
     },
 

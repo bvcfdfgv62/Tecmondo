@@ -25,13 +25,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
     const { user, logout } = useAuth();
 
     const navItems = [
-        { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/os', label: 'Ordens de Serviço', icon: Wrench },
         { path: '/clientes', label: 'Clientes (CRM)', icon: Users },
-        { path: '/produtos', label: 'Produtos', icon: Package },
-        { path: '/vendas/nova', label: 'Nova Venda', icon: ShoppingCart },
-        { path: '/fluxo', label: 'Fluxo de Caixa', icon: Wallet },
         { path: '/configuracoes', label: 'Configurações', icon: Settings },
+        { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+        { path: '/fluxo', label: 'Fluxo de Caixa', icon: Wallet },
+        { path: '/vendas/nova', label: 'Nova Venda', icon: ShoppingCart },
+        { path: '/os', label: 'Ordens de Serviço', icon: Wrench },
+        { path: '/produtos', label: 'Produtos', icon: Package },
+        { path: '/relatorio-produtos', label: 'Relatório de Produtos', icon: FileText },
+        { path: '/servicos', label: 'Serviços', icon: FileText },
     ];
 
     return (
