@@ -275,7 +275,7 @@ const ServiceOrderPrint: React.FC = () => {
                                 <tr>
                                     <td className="px-4 py-3 text-right text-slate-900 uppercase">Total</td>
                                     <td className="px-4 py-3 text-right text-lg text-blue-900">{formatCurrency(order.totalValue)}</td>
-                                </div>
+                                </tr>
                             </tfoot>
                         </table>
                     </div>
