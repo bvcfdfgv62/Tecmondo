@@ -14,30 +14,38 @@ const ClientDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [client, setClient] = useState<Client | null>(null);
     const [history, setHistory] = useState<{ orders: ServiceOrder[], budgets: BudgetRequest[] }>({ orders: [], budgets: [] });
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadClient = async () => {
-            if (id === 'novo') {
-                const newClient = await storageService.createClient({});
-                setClient(newClient);
-                setLoading(false);
-            } else if (id) {
-                const data = await storageService.getClientById(id);
-                if (data) {
-                    setClient(data);
-                    if (data.email) {
-                        const history = await storageService.getClientHistory(data.email);
-                        setHistory(history);
+            try {
+                setLoading(true);
+                setError(null);
+                if (id === 'novo') {
+                    const newClient = await storageService.createClient({});
+                    setClient(newClient);
+                } else if (id) {
+                    const data = await storageService.getClientById(id);
+                    if (data) {
+                        setClient(data);
+                        if (data.email) {
+                            const history = await storageService.getClientHistory(data.email);
+                            setHistory(history);
+                        }
+                    } else {
+                        setError('Cliente não encontrado');
+                        // Optional: Navigate back after a delay or let user decide
                     }
-                } else {
-                    alert('Cliente não encontrado');
-                    navigate('/clientes');
                 }
+            } catch (err) {
+                console.error('Erro ao carregar detalhes do cliente:', err);
+                setError('Falha ao carregar detalhes do cliente. Tente novamente.');
+            } finally {
                 setLoading(false);
             }
         };
         loadClient();
-    }, [id, navigate]);
+    }, [id]); // Removed navigate from dependencies to avoid loop if navigate is unstable
 
     const handleChange = (field: keyof Client, value: string) => {
         if (client) {
@@ -47,13 +55,37 @@ const ClientDetail: React.FC = () => {
 
     const handleSave = async () => {
         if (client) {
-            await storageService.saveClient(client);
-            alert('Cliente salvo com sucesso!');
-            navigate('/clientes');
+            try {
+                await storageService.saveClient(client);
+                alert('Cliente salvo com sucesso!');
+                navigate('/clientes');
+            } catch (err) {
+                console.error('Erro ao salvar cliente:', err);
+                alert('Erro ao salvar cliente. Verifique o console.');
+            }
         }
     };
 
-    if (loading || !client) return <div className="p-8 text-white">Carregando...</div>;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-8 text-center text-red-400">
+                <p className="text-xl font-bold mb-4">{error}</p>
+                <Button onClick={() => navigate('/clientes')} variant="outline">
+                    Voltar para Lista
+                </Button>
+            </div>
+        );
+    }
+
+    if (!client) return null;
 
     return (
         <div className="space-y-6 animate-fade-in text-text-primary max-w-5xl mx-auto pb-20">

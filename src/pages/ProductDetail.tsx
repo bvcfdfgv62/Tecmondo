@@ -12,26 +12,33 @@ const ProductDetail: React.FC = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [product, setProduct] = useState<Product | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadProduct = async () => {
-            if (id === 'novo') {
-                const newProduct = await storageService.createProduct({});
-                setProduct(newProduct);
-                setLoading(false);
-            } else if (id) {
-                const data = await storageService.getProductById(id);
-                if (data) {
-                    setProduct(data);
-                } else {
-                    alert('Produto não encontrado');
-                    navigate('/produtos');
+            try {
+                setLoading(true);
+                setError(null);
+                if (id === 'novo') {
+                    const newProduct = await storageService.createProduct({});
+                    setProduct(newProduct);
+                } else if (id) {
+                    const data = await storageService.getProductById(id);
+                    if (data) {
+                        setProduct(data);
+                    } else {
+                        setError('Produto não encontrado');
+                    }
                 }
+            } catch (err) {
+                console.error('Erro ao carregar produto:', err);
+                setError('Falha ao carregar produto. Tente novamente.');
+            } finally {
                 setLoading(false);
             }
         };
         loadProduct();
-    }, [id, navigate]);
+    }, [id]);
 
     const handleChange = (field: keyof Product, value: string | number) => {
         if (product) {
@@ -57,20 +64,49 @@ const ProductDetail: React.FC = () => {
                 alert('Preencha a descrição e o código de barras.');
                 return;
             }
-            await storageService.saveProduct(product);
-            alert('Produto salvo com sucesso!');
-            navigate('/produtos');
+            try {
+                await storageService.saveProduct(product);
+                alert('Produto salvo com sucesso!');
+                navigate('/produtos');
+            } catch (err) {
+                console.error('Erro ao salvar produto:', err);
+                alert('Erro ao salvar produto. Verifique o console.');
+            }
         }
     };
 
     const handleDelete = async () => {
         if (product && window.confirm('Tem certeza que deseja excluir este produto?')) {
-            await storageService.deleteProduct(product.id);
-            navigate('/produtos');
+            try {
+                await storageService.deleteProduct(product.id);
+                navigate('/produtos');
+            } catch (err) {
+                console.error('Erro ao excluir produto:', err);
+                alert('Erro ao excluir produto.');
+            }
         }
     };
 
-    if (loading || !product) return <div className="p-8 text-white">Carregando...</div>;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-8 text-center text-red-400">
+                <p className="text-xl font-bold mb-4">{error}</p>
+                <Button onClick={() => navigate('/produtos')} variant="outline">
+                    Voltar para Lista
+                </Button>
+            </div>
+        );
+    }
+
+    if (!product) return null;
 
     return (
         <div className="space-y-6 animate-fade-in text-text-primary max-w-5xl mx-auto pb-20">

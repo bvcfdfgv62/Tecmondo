@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { storageService } from '../services/storage';
-import { Transaction, DashboardStats } from '../types';
+import { Transaction, CashFlowStats } from '../types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 const CashFlow: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({ totalBalance: 0, monthlyIncome: 0, monthlyExpense: 0 });
+  const [stats, setStats] = useState<CashFlowStats>({ totalBalance: 0, monthlyIncome: 0, monthlyExpense: 0 });
   const [newTransaction, setNewTransaction] = useState({ description: '', amount: '', type: 'income' as 'income' | 'expense', category: '' });
   const [showForm, setShowForm] = useState(false);
 
@@ -23,7 +23,7 @@ const CashFlow: React.FC = () => {
 
   const refreshData = async () => {
     setTransactions(await storageService.getTransactions());
-    setStats(await storageService.getKPIs()); // changed from getStats to getKPIs as getStats might not exist in supabaseService
+    setStats(await storageService.getCashFlowStats());
   };
 
   const handleAddTransaction = async (e: React.FormEvent) => {

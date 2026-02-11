@@ -20,7 +20,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await storageService.getKPIs();
+        const data = await storageService.getDashboardKPIs();
         setKpis(data);
 
         // Prepare chart data (Last 7 days balance)

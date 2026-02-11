@@ -8,6 +8,13 @@ export interface Transaction {
 }
 
 export interface DashboardStats {
+    monthlyIncome: number;
+    pendingBudgets: number;
+    activeOS: number;
+    uniqueClients: number;
+}
+
+export interface CashFlowStats {
     totalBalance: number;
     monthlyIncome: number;
     monthlyExpense: number;

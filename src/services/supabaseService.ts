@@ -8,7 +8,8 @@ import {
     Product,
     Sale,
     Client,
-    SystemSettings
+    SystemSettings,
+    CashFlowStats
 } from '../types';
 
 export const supabaseService = {
@@ -560,10 +561,7 @@ export const supabaseService = {
         };
     },
 
-    getKPIs: async () => {
-        // This is expensive to do on client side with thousands of records, but fine for now.
-        // Better to use backend function or count queries.
-
+    getDashboardKPIs: async (): Promise<DashboardStats> => {
         // Monthly Income
         const now = new Date();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -584,7 +582,7 @@ export const supabaseService = {
             .select('*', { count: 'exact', head: true })
             .in('status', ['open', 'diagnosing', 'pending_approval', 'approved', 'in_progress']);
 
-        // Unique Clients (Approximate or query clients table)
+        // Unique Clients
         const { count: uniqueClients } = await supabase.from('clients')
             .select('*', { count: 'exact', head: true });
 
@@ -593,6 +591,38 @@ export const supabaseService = {
             pendingBudgets: pendingBudgets || 0,
             activeOS: activeOS || 0,
             uniqueClients: uniqueClients || 0
+        };
+    },
+
+    getCashFlowStats: async (): Promise<CashFlowStats> => {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        // Fetch all transactions to calculate total balance (this might be heavy over time, but ok for now)
+        // Ideally we should have a 'balance' field in a separate table updated by triggers, or just sum everything.
+        const { data: allTransactions } = await supabase.from('transactions').select('amount, type');
+
+        const totalBalance = allTransactions?.reduce((acc, curr) => {
+            return acc + (curr.type === 'income' ? curr.amount : -curr.amount);
+        }, 0) || 0;
+
+        // Monthly Stats
+        const { data: monthlyTransactions } = await supabase.from('transactions')
+            .select('amount, type')
+            .gte('date', firstDay);
+
+        const monthlyIncome = monthlyTransactions
+            ?.filter(t => t.type === 'income')
+            .reduce((acc, curr) => acc + curr.amount, 0) || 0;
+
+        const monthlyExpense = monthlyTransactions
+            ?.filter(t => t.type === 'expense')
+            .reduce((acc, curr) => acc + curr.amount, 0) || 0;
+
+        return {
+            totalBalance,
+            monthlyIncome,
+            monthlyExpense
         };
     }
 };
