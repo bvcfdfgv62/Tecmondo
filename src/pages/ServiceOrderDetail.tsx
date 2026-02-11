@@ -4,7 +4,7 @@ import { storageService } from '../services/storage';
 import { ServiceOrder, ServiceItem, ServiceOrderStatus, ServiceCategory, ServiceCatalogItem, Product } from '../types';
 import { SERVICE_CATALOG } from '../data/serviceCatalog';
 import {
-    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package, ShoppingCart
+    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,34 @@ const ServiceOrderDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [formData, setFormData] = useState<ServiceOrder | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    // Form State
+    const [formData, setFormData] = useState<ServiceOrder>({
+        id: '',
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        technician: '',
+        customerName: '',
+        whatsapp: '',
+        email: '',
+        equipmentType: 'Notebook',
+        brand: '',
+        model: '',
+        reportedProblem: '',
+        entryCondition: {
+            turnOn: false,
+            brokenScreen: false,
+            noAccessories: false,
+            hasPassword: false,
+            password: ''
+        },
+        services: [],
+        products: [],
+        discount: 0,
+        totalValue: 0,
+        paymentStatus: 'pending'
+    });
 
     // Module State
     const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | ''>('');
@@ -38,100 +65,239 @@ const ServiceOrderDetail: React.FC = () => {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [productQuantity, setProductQuantity] = useState(1);
 
-    // Pre-load logic
+    // Initialization
     useEffect(() => {
-        const loadOrder = async () => {
+        const init = async () => {
             try {
+                setLoading(true);
+
+                // Load Products for selection
+                const prodResponse = await storageService.getProducts();
+                if (prodResponse.success && prodResponse.data) {
+                    setProducts(prodResponse.data);
+                }
+
+                // Load Order Data
                 if (id === 'novo') {
-                    const response = await storageService.createServiceOrder({});
-                    if (response.success && response.data) {
-                        setFormData(response.data);
-                    } else {
-                        alert('Erro ao criar nova OS: ' + response.error);
-                        navigate('/os');
-                    }
+                    // Start fresh, no DB call needed yet
+                    setFormData(prev => ({
+                        ...prev,
+                        // Generate a temp ID or let backend handle it on save?
+                        // Better to leave ID empty and let backend assign on create
+                        id: 'new',
+                        createdAt: new Date().toISOString()
+                    }));
                 } else if (id) {
                     const response = await storageService.getServiceOrderById(id);
                     if (response.success && response.data) {
                         setFormData(response.data);
                         if (response.data.repairCategory) setSelectedCategory(response.data.repairCategory);
+                        // Ensure nested objects exist
+                        if (!response.data.entryCondition) {
+                            setFormData(prev => ({
+                                ...prev, entryCondition: {
+                                    turnOn: false, brokenScreen: false, noAccessories: false, hasPassword: false
+                                }
+                            }));
+                        }
                     } else {
-                        alert('OS não encontrada ou erro ao carregar.');
-                        navigate('/os');
-                        return; // Prevent setting loading false on unmounted component if nav happens
+                        setError('OS não encontrada ou erro ao carregar.');
                     }
                 }
-            } catch (error) {
-                console.error('Erro ao carregar OS:', error);
-                alert('Erro crítico ao carregar detalhes da OS.');
-                navigate('/os');
+            } catch (err) {
+                console.error('Erro ao inicializar:', err);
+                setError('Falha crítica ao carregar página.');
             } finally {
                 setLoading(false);
             }
         };
-        loadOrder();
-    }, [id, navigate]);
+        init();
+    }, [id]);
 
-    useEffect(() => {
-        const loadProducts = async () => {
-            const response = await storageService.getProducts();
-            if (response.success && response.data) {
-                setProducts(response.data);
+    // Handlers
+    const handleChange = (field: keyof ServiceOrder, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleNestedChange = (parent: 'entryCondition', field: string, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            [parent]: {
+                ...prev[parent],
+                [field]: value
             }
-        };
-        loadProducts();
-    }, []);
+        }));
+    };
 
-    // ... (rest of filtering logic)
+    const handleCategoryChange = (category: ServiceCategory) => {
+        setSelectedCategory(category);
+        setSelectedCatalogItem(null);
+    };
 
-    const handlePrint = async () => {
-        if (formData) {
-            const response = await storageService.saveServiceOrder(formData);
-            if (response.success) {
-                navigate(`/os/${formData.id}/imprimir`);
-            } else {
-                alert('Erro ao salvar para impressão: ' + response.error);
-            }
+    const handleSelectCatalogItem = (item: ServiceCatalogItem) => {
+        setSelectedCatalogItem(item);
+        setCustomServicePrice(item.value.toString());
+        setServiceQuantity(1);
+    };
+
+    const handleSelectProduct = (product: Product) => {
+        setSelectedProduct(product);
+        setProductQuantity(1);
+    };
+
+    const addService = () => {
+        if (!selectedCatalogItem) return;
+
+        const price = parseFloat(customServicePrice);
+        if (isNaN(price) || price < 0) {
+            alert('Preço inválido');
+            return;
         }
+
+        const newService: ServiceItem = {
+            id: Math.random().toString(36).substr(2, 9),
+            code: selectedCatalogItem.code,
+            description: selectedCatalogItem.description,
+            value: price * serviceQuantity,
+            amount: serviceQuantity
+        };
+
+        const updatedServices = [...formData.services, newService];
+        const newTotal = calculateTotal(updatedServices, formData.products || [], formData.discount);
+
+        setFormData(prev => ({
+            ...prev,
+            services: updatedServices,
+            totalValue: newTotal
+        }));
+
+        // Reset selection
+        setSelectedCatalogItem(null);
+        setCustomServicePrice('');
+        setServiceQuantity(1);
+    };
+
+    const removeService = (serviceId: string) => {
+        const updatedServices = formData.services.filter(s => s.id !== serviceId);
+        const newTotal = calculateTotal(updatedServices, formData.products || [], formData.discount);
+        setFormData(prev => ({ ...prev, services: updatedServices, totalValue: newTotal }));
+    };
+
+    const addProduct = () => {
+        if (!selectedProduct) return;
+
+        const total = selectedProduct.resalePrice * productQuantity;
+
+        // Check if already added
+        const existingIndex = (formData.products || []).findIndex(p => p.productId === selectedProduct.id);
+        let updatedProducts = [...(formData.products || [])];
+
+        if (existingIndex >= 0) {
+            updatedProducts[existingIndex].quantity += productQuantity;
+            updatedProducts[existingIndex].total += total;
+        } else {
+            updatedProducts.push({
+                id: Math.random().toString(36).substr(2, 9),
+                productId: selectedProduct.id,
+                description: selectedProduct.description,
+                unitPrice: selectedProduct.resalePrice,
+                quantity: productQuantity,
+                total: total
+            });
+        }
+
+        const newTotal = calculateTotal(formData.services, updatedProducts, formData.discount);
+
+        setFormData(prev => ({
+            ...prev,
+            products: updatedProducts,
+            totalValue: newTotal
+        }));
+
+        setSelectedProduct(null);
+        setProductQuantity(1);
+    };
+
+    const removeProduct = (itemId: string) => {
+        const updatedProducts = (formData.products || []).filter(p => p.id !== itemId);
+        const newTotal = calculateTotal(formData.services, updatedProducts, formData.discount);
+        setFormData(prev => ({ ...prev, products: updatedProducts, totalValue: newTotal }));
+    };
+
+    const updateTotals = (services: ServiceItem[], products: any[], discount: number) => {
+        const total = calculateTotal(services, products, discount);
+        setFormData(prev => ({ ...prev, discount, totalValue: total }));
+    };
+
+    const calculateTotal = (services: ServiceItem[], products: any[], discount: number) => {
+        const servicesTotal = services.reduce((acc, curr) => acc + curr.value, 0);
+        const productsTotal = products.reduce((acc, curr) => acc + curr.total, 0);
+        return Math.max(0, servicesTotal + productsTotal - discount);
     };
 
     const handleSave = async () => {
-        if (formData) {
-            try {
-                const response = await storageService.saveServiceOrder(formData);
-                if (response.success) {
-                    alert('Ordem de Serviço salva com sucesso!');
-                    navigate('/os');
-                } else {
-                    alert(`Erro ao salvar: ${response.error}`);
-                }
-            } catch (err) {
-                console.error('Erro ao salvar OS:', err);
-                alert('Erro crítico ao salvar OS.');
-            }
+        if (!formData.customerName) {
+            alert('Nome do Cliente é obrigatório');
+            return;
         }
+
+        try {
+            setLoading(true);
+            let response;
+
+            // Clean up ID for new records
+            const dataToSave = { ...formData };
+            if (id === 'novo' || dataToSave.id === 'new') {
+                // Create
+                response = await storageService.createServiceOrder(dataToSave);
+            } else {
+                // Update
+                response = await storageService.saveServiceOrder(dataToSave);
+            }
+
+            if (response.success) {
+                alert('OS Salva com sucesso!');
+                navigate('/os');
+            } else {
+                alert('Erro ao salvar: ' + response.error);
+            }
+        } catch (err) {
+            console.error('Save error:', err);
+            alert('Erro crítico ao salvar.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePrint = async () => {
+        if (id === 'novo') {
+            alert('Salve a OS antes de imprimir.');
+            return;
+        }
+        navigate(`/os/${id}/imprimir`);
     };
 
     const handleStatusChange = async (newStatus: ServiceOrderStatus) => {
-        if (!formData) return;
-        if (newStatus === 'completed' && formData.totalValue === 0) {
-            alert('Não é possível finalizar uma OS com valor total zero.');
-            return;
-        }
-        if (newStatus === 'completed' && formData.paymentStatus !== 'paid') {
-            if (!confirm('O pagamento ainda não consta como PAGO. Deseja finalizar mesmo assim?')) return;
-        }
-
-        const updatedOrder = { ...formData, status: newStatus };
-        // Optimistic update
-        setFormData(updatedOrder);
-
-        const response = await storageService.saveServiceOrder(updatedOrder);
-        if (!response.success) {
-            alert('Erro ao atualizar status: ' + response.error);
-            // Revert if failed (optional, but good practice)
-        }
+        setFormData(prev => ({ ...prev, status: newStatus }));
+        // Note: For immediate save effect, we could call saveServiceOrder here too
+        // But allowing user to click "Save" explicitly is safer for edits
     };
+
+    // Filter Logic
+    const filteredServices = selectedCategory
+        ? SERVICE_CATALOG.filter(s =>
+            s.category === selectedCategory &&
+            s.description.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        : [];
+
+    const filteredProducts = products.filter(p =>
+        p.description.toLowerCase().includes(searchProductQuery.toLowerCase()) ||
+        p.barcode.toLowerCase().includes(searchProductQuery.toLowerCase())
+    );
+
+    const isReadOnly = formData.status === 'completed' || formData.status === 'cancelled';
+
 
     if (loading) {
         return (
@@ -141,8 +307,14 @@ const ServiceOrderDetail: React.FC = () => {
         );
     }
 
-    if (!formData) return <div className="p-8 text-white">Carregando dados...</div>;
-    const isReadOnly = formData.status === 'completed' || formData.status === 'cancelled';
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+                <div className="text-red-500 text-lg">{error}</div>
+                <Button onClick={() => navigate('/os')}>Voltar</Button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 animate-fade-in text-text-primary max-w-6xl mx-auto pb-20">
@@ -154,7 +326,7 @@ const ServiceOrderDetail: React.FC = () => {
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                            OS #{formData.id}
+                            OS #{id === 'novo' ? 'Nova' : formData.id}
                             <span className={cn("px-2 py-0.5 rounded text-xs uppercase tracking-wider border",
                                 formData.status === 'open' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
                                     formData.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
@@ -168,16 +340,21 @@ const ServiceOrderDetail: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="border-white/20 hover:bg-white/10" onClick={handlePrint}>
-                        <Printer size={18} className="mr-2" /> Imprimir
-                    </Button>
+                    {id !== 'novo' && (
+                        <Button variant="outline" className="border-white/20 hover:bg-white/10" onClick={handlePrint}>
+                            <Printer size={18} className="mr-2" /> Imprimir
+                        </Button>
+                    )}
                     {!isReadOnly && (
                         <Button onClick={handleSave} className="bg-primary hover:bg-primary-hover">
                             <Save size={18} className="mr-2" /> Salvar
                         </Button>
                     )}
-                    {formData.status !== 'completed' && formData.status !== 'cancelled' && (
-                        <Button variant="outline" className="text-green-500 border-green-500/30 hover:bg-green-500/10" onClick={() => handleStatusChange('completed')}>
+                    {formData.status !== 'completed' && formData.status !== 'cancelled' && id !== 'novo' && (
+                        <Button variant="outline" className="text-green-500 border-green-500/30 hover:bg-green-500/10" onClick={() => {
+                            setFormData(prev => ({ ...prev, status: 'completed' }));
+                            handleSave();
+                        }}>
                             <CheckCircle size={18} className="mr-2" /> Finalizar
                         </Button>
                     )}
@@ -509,7 +686,7 @@ const ServiceOrderDetail: React.FC = () => {
                         <CardHeader className="bg-black/20 border-b border-white/5">
                             <CardTitle className="text-sm font-bold uppercase text-muted-foreground tracking-wider flex justify-between">
                                 <span>Resumo da OS</span>
-                                <span className="text-white">{formData.services.length} itens</span>
+                                <span className="text-white">{formData.services.length + (formData.products?.length || 0)} itens</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -534,8 +711,8 @@ const ServiceOrderDetail: React.FC = () => {
                                         </div>
                                     </div>
                                 ))}
-                                {formData.services.length === 0 && (
-                                    <div className="text-center text-muted-foreground text-xs py-4">Nenhum serviço adicionado.</div>
+                                {formData.services.length === 0 && (!formData.products || formData.products.length === 0) && (
+                                    <div className="text-center text-muted-foreground text-xs py-4">Nenhum item adicionado.</div>
                                 )}
 
                                 {/* Products List */}
@@ -545,7 +722,7 @@ const ServiceOrderDetail: React.FC = () => {
                                             Produtos / Peças
                                         </div>
                                         {formData.products?.map((item) => (
-                                            <div key={item.id} className="relative group bg-white/5 p-3 rounded-sm border border-transparent hover:border-white/10 transition-all mx-4 mb-3">
+                                            <div key={item.id} className="relative group bg-white/5 p-3 rounded-sm border border-transparent hover:border-white/10 transition-all mb-3">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <div>
                                                         <span className="text-sm font-medium text-white">{item.description}</span>
@@ -570,7 +747,7 @@ const ServiceOrderDetail: React.FC = () => {
                             <div className="bg-black/40 p-4 border-t border-white/10 space-y-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Subtotal</span>
-                                    <span>R$ {formData.services.reduce((a, b) => a + b.value, 0).toFixed(2)}</span>
+                                    <span>R$ {(formData.services.reduce((a, b) => a + b.value, 0) + (formData.products || []).reduce((a, b) => a + b.total, 0)).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-muted-foreground">Desconto</span>
