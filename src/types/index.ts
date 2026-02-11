@@ -144,6 +144,20 @@ export interface ServiceOrder {
 
     // Link to other entities
     budgetId?: string; // If converted from budget
+    clientId?: string; // Foreign key to clients table
+
+    // New Fields
+    patternPassword?: string; // String representation of the pattern (e.g., "0-1-2-5-8")
+
+    // Specific Image Fields
+    imgBeforeFront?: string;
+    imgBeforeBack?: string;
+    imgAfterFront?: string;
+    imgAfterBack?: string;
+
+    // Legacy fields (kept for compatibility if needed, otherwise optional)
+    entryPhotos?: string[];
+    exitPhotos?: string[];
 }
 
 export interface Product {

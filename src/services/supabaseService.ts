@@ -180,7 +180,15 @@ export const supabaseService = {
             discount: o.discount || 0,
             totalValue: o.total_value || 0,
             paymentStatus: o.payment_status || 'pending',
-            budgetId: undefined
+            budgetId: undefined,
+            clientId: o.client_id,
+            patternPassword: o.pattern_password,
+            imgBeforeFront: o.img_frente_quebrado,
+            imgBeforeBack: o.img_tras_quebrado,
+            imgAfterFront: o.img_frente_reparado,
+            imgAfterBack: o.img_tras_reparado,
+            entryPhotos: o.entry_photos || [],
+            exitPhotos: o.exit_photos || []
         }));
 
         return createResponse(orders, null);
@@ -212,7 +220,15 @@ export const supabaseService = {
             totalValue: o.total_value || 0,
             paymentStatus: o.payment_status || 'pending',
             repairCategory: o.repair_category || undefined,
-            budgetId: undefined
+            budgetId: undefined,
+            clientId: o.client_id,
+            patternPassword: o.pattern_password,
+            imgBeforeFront: o.img_frente_quebrado,
+            imgBeforeBack: o.img_tras_quebrado,
+            imgAfterFront: o.img_frente_reparado,
+            imgAfterBack: o.img_tras_reparado,
+            entryPhotos: o.entry_photos || [],
+            exitPhotos: o.exit_photos || []
         };
 
         return createResponse(order, null);
@@ -250,7 +266,15 @@ export const supabaseService = {
             discount: newOrder.discount || 0,
             totalValue: newOrder.total_value || 0,
             paymentStatus: newOrder.payment_status || 'pending',
-            budgetId: undefined
+            budgetId: undefined,
+            clientId: newOrder.client_id,
+            patternPassword: newOrder.pattern_password,
+            imgBeforeFront: newOrder.img_frente_quebrado,
+            imgBeforeBack: newOrder.img_tras_quebrado,
+            imgAfterFront: newOrder.img_frente_reparado,
+            imgAfterBack: newOrder.img_tras_reparado,
+            entryPhotos: newOrder.entry_photos || [],
+            exitPhotos: newOrder.exit_photos || []
         };
 
         return createResponse(createdOrder, null);
@@ -275,7 +299,15 @@ export const supabaseService = {
             total_value: order.totalValue,
             payment_status: order.paymentStatus,
             repair_category: order.repairCategory,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            client_id: order.clientId,
+            pattern_password: order.patternPassword,
+            img_frente_quebrado: order.imgBeforeFront,
+            img_tras_quebrado: order.imgBeforeBack,
+            img_frente_reparado: order.imgAfterFront,
+            img_tras_reparado: order.imgAfterBack,
+            entry_photos: order.entryPhotos,
+            exit_photos: order.exitPhotos
         }).eq('id', order.id);
 
         if (error) return createResponse(null, error);
@@ -291,6 +323,43 @@ export const supabaseService = {
     deleteServiceOrder: async (id: string): Promise<ApiResponse<void>> => {
         const { error } = await supabase.from('service_orders').delete().eq('id', id);
         return createResponse(null, error);
+    },
+
+    searchClients: async (query: string): Promise<ApiResponse<Client[]>> => {
+        const { data, error } = await supabase
+            .from('clients')
+            .select('*')
+            .or(`name.ilike.%${query}%,whatsapp.ilike.%${query}%,cpf_cnpj.ilike.%${query}%`)
+            .limit(10);
+
+        if (error) return createResponse(null, error);
+
+        const clients = (data || []).map((c: any) => ({
+            id: c.id,
+            createdAt: c.created_at,
+            name: c.name || 'Cliente Sem Nome',
+            email: c.email || '',
+            whatsapp: c.whatsapp || '',
+            cpfOrCnpj: c.cpf_cnpj || '',
+            address: c.address || '',
+            notes: c.notes || ''
+        }));
+
+        return createResponse(clients, null);
+    },
+
+    uploadOSImage: async (file: File, path: string): Promise<ApiResponse<string>> => {
+        const { data, error } = await supabase.storage
+            .from('os-images')
+            .upload(path, file, {
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (error) return createResponse(null, error);
+
+        const { data: { publicUrl } } = supabase.storage.from('os-images').getPublicUrl(path);
+        return createResponse(publicUrl, null);
     },
 
     // ... (rest of methods)

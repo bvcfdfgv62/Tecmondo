@@ -11,6 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { ClientSearch } from '@/components/ClientSearch';
+import { PatternLock } from '@/components/PatternLock';
+import { ImageUpload } from '@/components/ImageUpload';
+import { supabaseService } from '../services/supabaseService';
+import { X } from 'lucide-react';
 
 const CATEGORIES: { label: string; value: ServiceCategory }[] = [
     { label: 'Computadores / Notebooks', value: 'COMPUTADORES_NOTEBOOKS' },
@@ -64,6 +69,10 @@ const ServiceOrderDetail: React.FC = () => {
     const [searchProductQuery, setSearchProductQuery] = useState('');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [productQuantity, setProductQuantity] = useState(1);
+
+    // New Client Modal State
+    const [showNewClientModal, setShowNewClientModal] = useState(false);
+    const [newClientData, setNewClientData] = useState({ name: '', whatsapp: '', email: '', cpfOrCnpj: '' });
 
     // Initialization
     useEffect(() => {
@@ -138,6 +147,43 @@ const ServiceOrderDetail: React.FC = () => {
         setSelectedCatalogItem(item);
         setCustomServicePrice(item.value.toString());
         setServiceQuantity(1);
+    };
+
+    const handleSelectClient = (client: any) => {
+        setFormData(prev => ({
+            ...prev,
+            clientId: client.id,
+            customerName: client.name,
+            whatsapp: client.whatsapp || '',
+            email: client.email || '',
+            cpf: client.cpfOrCnpj || ''
+        }));
+    };
+
+    const handleCreateClient = async () => {
+        if (!newClientData.name) {
+            alert('Nome é obrigatório');
+            return;
+        }
+
+        setLoading(true);
+        const response = await supabaseService.createClient({
+            name: newClientData.name,
+            whatsapp: newClientData.whatsapp,
+            email: newClientData.email,
+            cpfOrCnpj: newClientData.cpfOrCnpj,
+            address: '',
+            notes: ''
+        });
+        setLoading(false);
+
+        if (response.success && response.data) {
+            handleSelectClient(response.data);
+            setShowNewClientModal(false);
+            setNewClientData({ name: '', whatsapp: '', email: '', cpfOrCnpj: '' });
+        } else {
+            alert('Erro ao criar cliente: ' + (response.error || 'Erro desconhecido'));
+        }
     };
 
     const handleSelectProduct = (product: Product) => {
@@ -370,11 +416,21 @@ const ServiceOrderDetail: React.FC = () => {
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-bold uppercase text-muted-foreground tracking-wider">Cliente</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <Input value={formData.customerName} onChange={(e) => handleChange('customerName', e.target.value)} disabled={isReadOnly} placeholder="Nome do Cliente" />
-                                <Input value={formData.whatsapp} onChange={(e) => handleChange('whatsapp', e.target.value)} disabled={isReadOnly} placeholder="WhatsApp" />
-                                <Input value={formData.email} onChange={(e) => handleChange('email', e.target.value)} disabled={isReadOnly} placeholder="Email" />
-                                <Input value={formData.cpf || ''} onChange={(e) => handleChange('cpf', e.target.value)} disabled={isReadOnly} placeholder="CPF/CNPJ" />
+                            <CardContent className="space-y-4">
+                                {!isReadOnly && (
+                                    <div className="bg-blue-500/10 p-3 rounded-md border border-blue-500/20">
+                                        <ClientSearch
+                                            onSelectClient={handleSelectClient}
+                                            onNewClient={() => setShowNewClientModal(true)}
+                                        />
+                                    </div>
+                                )}
+                                <div className="space-y-3">
+                                    <Input value={formData.customerName} onChange={(e) => handleChange('customerName', e.target.value)} disabled={isReadOnly} placeholder="Nome do Cliente" />
+                                    <Input value={formData.whatsapp} onChange={(e) => handleChange('whatsapp', e.target.value)} disabled={isReadOnly} placeholder="WhatsApp" />
+                                    <Input value={formData.email} onChange={(e) => handleChange('email', e.target.value)} disabled={isReadOnly} placeholder="Email" />
+                                    <Input value={formData.cpf || ''} onChange={(e) => handleChange('cpf', e.target.value)} disabled={isReadOnly} placeholder="CPF/CNPJ" />
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -409,7 +465,18 @@ const ServiceOrderDetail: React.FC = () => {
                                     <label className="flex items-center gap-2 cursor-pointer text-xs"><input type="checkbox" checked={formData.entryCondition.hasPassword} onChange={(e) => handleNestedChange('entryCondition', 'hasPassword', e.target.checked)} disabled={isReadOnly} /> Com Senha</label>
                                 </div>
                                 {formData.entryCondition.hasPassword && (
-                                    <Input placeholder="Informe a senha..." value={formData.entryCondition.password || ''} onChange={(e) => handleNestedChange('entryCondition', 'password', e.target.value)} disabled={isReadOnly} />
+                                    <div className="mt-2 space-y-2">
+                                        <Input placeholder="Senha numérica/texto (opcional)" value={formData.entryCondition.password || ''} onChange={(e) => handleNestedChange('entryCondition', 'password', e.target.value)} disabled={isReadOnly} />
+                                        <div className="border border-white/10 rounded-md p-4 bg-black/20 flex flex-col items-center gap-2">
+                                            <label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block text-center">Padrão de Desbloqueio</label>
+                                            <PatternLock
+                                                initialValue={formData.patternPassword}
+                                                onChange={(pattern) => handleChange('patternPassword', pattern)}
+                                                readOnly={isReadOnly}
+                                                size={220}
+                                            />
+                                        </div>
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>
@@ -665,6 +732,27 @@ const ServiceOrderDetail: React.FC = () => {
                         </CardContent>
                     </Card>
 
+                    {/* Images Section */}
+                    <ImageUpload
+                        orderId={id || 'temp'}
+                        images={{
+                            frontBroken: formData.imgBeforeFront,
+                            backBroken: formData.imgBeforeBack,
+                            frontRepaired: formData.imgAfterFront,
+                            backRepaired: formData.imgAfterBack
+                        }}
+                        onImagesChange={(imgs) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                imgBeforeFront: imgs.frontBroken,
+                                imgBeforeBack: imgs.backBroken,
+                                imgAfterFront: imgs.frontRepaired,
+                                imgAfterBack: imgs.backRepaired
+                            }));
+                        }}
+                        readOnly={isReadOnly}
+                    />
+
                     {/* Diagnosis Field */}
                     <Card className="border-white/5 bg-surface/30">
                         <CardContent className="pt-4 space-y-4">
@@ -806,6 +894,29 @@ const ServiceOrderDetail: React.FC = () => {
                     </Card>
                 </div>
             </div>
+
+            {/* Quick Client Modal */}
+            {showNewClientModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <Card className="w-full max-w-md bg-slate-900 border-white/10 shadow-xl">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Novo Cliente Rápido</CardTitle>
+                            <Button variant="ghost" size="icon" onClick={() => setShowNewClientModal(false)}>
+                                <X size={20} />
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Input placeholder="Nome Completo" value={newClientData.name} onChange={e => setNewClientData(prev => ({ ...prev, name: e.target.value }))} />
+                            <Input placeholder="WhatsApp" value={newClientData.whatsapp} onChange={e => setNewClientData(prev => ({ ...prev, whatsapp: e.target.value }))} />
+                            <Input placeholder="Email (Opcional)" value={newClientData.email} onChange={e => setNewClientData(prev => ({ ...prev, email: e.target.value }))} />
+                            <Input placeholder="CPF (Opcional)" value={newClientData.cpfOrCnpj} onChange={e => setNewClientData(prev => ({ ...prev, cpfOrCnpj: e.target.value }))} />
+                            <Button className="w-full bg-blue-600 hover:bg-blue-500" onClick={handleCreateClient}>
+                                Salvar e Selecionar
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 };
