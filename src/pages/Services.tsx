@@ -25,9 +25,20 @@ const Services: React.FC = () => {
     const fetchServices = async () => {
         setLoading(true);
         const res = await supabaseService.getServiceCatalog();
-        if (res.success && res.data) {
+
+        // Auto-seed if empty (Native behavior requested by user)
+        if (res.success && (!res.data || res.data.length === 0)) {
+            console.log('Catálogo vazio, populando nativamente...');
+            await seedServices();
+            // Re-fetch after seeding
+            const reRes = await supabaseService.getServiceCatalog();
+            if (reRes.success && reRes.data) {
+                setServices(reRes.data);
+            }
+        } else if (res.success && res.data) {
             setServices(res.data);
         }
+
         setLoading(false);
     };
 
@@ -80,9 +91,6 @@ const Services: React.FC = () => {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-white">Catálogo de Serviços</h1>
                 <div className="flex gap-2">
-                    <Button onClick={handleSeed} variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">
-                        <Database className="mr-2" size={18} /> Importar Padrões
-                    </Button>
                     <Button onClick={openNew} className="bg-emerald-600 hover:bg-emerald-500">
                         <Plus className="mr-2" size={18} /> Novo Serviço
                     </Button>

@@ -2,7 +2,7 @@
 import { supabaseService } from './services/supabaseService';
 import { ServiceCatalogItem } from './types';
 
-const initialServices: ServiceCatalogItem[] = [
+export const initialServices: ServiceCatalogItem[] = [
     { code: 'MOPC001', description: 'FORMATAÇÃO COMPLETA', value: 150.00, category: 'COMPUTADORES_NOTEBOOKS', active: true },
     { code: 'MOPC002', description: 'INSTALAÇÃO DE DRIVERS', value: 80.00, category: 'COMPUTADORES_NOTEBOOKS', active: true },
     { code: 'MOPC003', description: 'INSTALAÇÃO DE PROGRAMAS PADRÃO', value: 100.00, category: 'COMPUTADORES_NOTEBOOKS', active: true },
