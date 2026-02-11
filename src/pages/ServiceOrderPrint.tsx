@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { storageService } from '../services/storage';
 import { ServiceOrder } from '../types';
 import { PatternLock } from '../components/PatternLock';
-import { Printer, MapPin, Phone, Calendar, AlertTriangle, Wrench, CheckCircle, Smartphone, User, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { Printer, MapPin, Phone, Calendar, AlertTriangle, Wrench, CheckCircle, Smartphone, User, DollarSign, Image as ImageIcon, Box } from 'lucide-react';
 
 const ServiceOrderPrint: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -81,6 +81,15 @@ const ServiceOrderPrint: React.FC = () => {
         );
     };
 
+    const ConditionCheckbox = ({ label, checked }: { label: string; checked: boolean }) => (
+        <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 border border-slate-400 rounded-sm flex items-center justify-center ${checked ? 'bg-slate-800 border-slate-800' : 'bg-white'}`}>
+                {checked && <CheckCircle size={10} className="text-white" />}
+            </div>
+            <span className={`text-[10px] uppercase font-bold ${checked ? 'text-slate-900' : 'text-slate-400'}`}>{label}</span>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-gray-100 p-8 print:p-0 print:bg-white">
             <div className="max-w-[794px] mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-[1123px] relative flex flex-col p-8 box-border text-[11px] leading-tight font-sans text-gray-800">
@@ -120,12 +129,12 @@ const ServiceOrderPrint: React.FC = () => {
                 {/* --- CLIENT & DEVICE GRID --- */}
                 <div className="grid grid-cols-2 gap-6 mb-6">
                     {/* CLIENTE */}
-                    <section className="border border-gray-200 rounded-lg overflow-hidden">
+                    <section className="border border-gray-200 rounded-lg overflow-hidden flex flex-col md:h-full">
                         <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
                             <User size={14} className="text-slate-700" />
                             <h3 className="text-xs font-bold text-slate-800 uppercase">Dados do Cliente</h3>
                         </div>
-                        <div className="p-3 space-y-2">
+                        <div className="p-3 space-y-2 flex-grow">
                             <div>
                                 <span className="block text-[9px] uppercase font-bold text-gray-400">Nome</span>
                                 <span className="text-sm font-semibold text-slate-900 block">{order.customerName}</span>
@@ -140,16 +149,20 @@ const ServiceOrderPrint: React.FC = () => {
                                     <span className="text-xs text-slate-800 block">{order.cpf || '—'}</span>
                                 </div>
                             </div>
+                            <div>
+                                <span className="block text-[9px] uppercase font-bold text-gray-400">Email</span>
+                                <span className="text-xs text-slate-800 block truncate">{order.email || '—'}</span>
+                            </div>
                         </div>
                     </section>
 
                     {/* APARELHO */}
-                    <section className="border border-gray-200 rounded-lg overflow-hidden">
+                    <section className="border border-gray-200 rounded-lg overflow-hidden flex flex-col md:h-full">
                         <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
                             <Smartphone size={14} className="text-slate-700" />
                             <h3 className="text-xs font-bold text-slate-800 uppercase">Dados do Aparelho</h3>
                         </div>
-                        <div className="p-3 space-y-2">
+                        <div className="p-3 space-y-2 flex-grow">
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <span className="block text-[9px] uppercase font-bold text-gray-400">Equipamento</span>
@@ -160,25 +173,30 @@ const ServiceOrderPrint: React.FC = () => {
                                     <span className="text-xs text-slate-800 block">{order.brand} / {order.model}</span>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 items-center">
-                                <div>
-                                    <span className="block text-[9px] uppercase font-bold text-gray-400">Nº de Série / IMEI</span>
-                                    <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded text-slate-700 inline-block">{order.serialNumber || '—'}</span>
-                                </div>
-                                <div className="text-right">
-                                    {order.patternPassword ? (
-                                        <div className="flex justify-end">
-                                            <div className="scale-50 origin-right -my-3">
-                                                <PatternLock initialValue={order.patternPassword} readOnly size={80} />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <span className="block text-[9px] uppercase font-bold text-gray-400">Senha (PIN)</span>
-                                            <span className="text-xs font-mono font-bold text-slate-800">{order.entryCondition.password || 'Sem senha'}</span>
-                                        </>
-                                    )}
-                                </div>
+                            <div>
+                                <span className="block text-[9px] uppercase font-bold text-gray-400">Nº de Série / IMEI</span>
+                                <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded text-slate-700 inline-block">{order.serialNumber || '—'}</span>
+                            </div>
+
+                            {/* Checkboxes Conditions */}
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-gray-200 mt-2">
+                                <ConditionCheckbox label="Liga" checked={order.entryCondition.turnOn} />
+                                <ConditionCheckbox label="Tela Quebrada" checked={order.entryCondition.brokenScreen} />
+                                <ConditionCheckbox label="Sem Acessórios" checked={order.entryCondition.noAccessories} />
+                                <ConditionCheckbox label="Com Senha" checked={order.entryCondition.hasPassword || !!order.patternPassword} />
+                            </div>
+
+                            <div className="pt-2 border-t border-dashed border-gray-200 mt-2 flex justify-between items-center">
+                                <span className="text-[9px] uppercase font-bold text-gray-400">Senha / Padrão</span>
+                                {order.patternPassword ? (
+                                    <div className="scale-50 origin-right -my-3">
+                                        <PatternLock initialValue={order.patternPassword} readOnly size={60} />
+                                    </div>
+                                ) : (
+                                    <span className="text-xs font-mono font-bold text-slate-800 bg-gray-100 px-2 py-0.5 rounded">
+                                        {order.entryCondition.password || 'Sem Senha'}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </section>
@@ -238,42 +256,55 @@ const ServiceOrderPrint: React.FC = () => {
                                 <DollarSign size={14} className="text-slate-700" />
                                 <h3 className="text-xs font-bold text-slate-800 uppercase">Detalhamento Financeiro</h3>
                             </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] uppercase font-bold text-gray-500">Pagamento:</span>
+                                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                    }`}>
+                                    {order.paymentStatus === 'paid' ? 'Pago' : 'Pendente'}
+                                </span>
+                            </div>
                         </div>
                         <table className="w-full text-xs">
                             <thead className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-200">
                                 <tr>
+                                    <th className="text-left px-4 py-2 uppercase text-[9px]">Código</th>
                                     <th className="text-left px-4 py-2 uppercase text-[9px]">Descrição</th>
+                                    <th className="text-right px-4 py-2 uppercase text-[9px]">Qtd.</th>
                                     <th className="text-right px-4 py-2 uppercase text-[9px] w-32">Valor (R$)</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {order.services.map((item, i) => (
-                                    <tr key={i}>
+                                    <tr key={`srv-${i}`}>
+                                        <td className="px-4 py-2 text-slate-500 font-mono text-[9px]">{item.code || 'SERV'}</td>
                                         <td className="px-4 py-2 text-slate-700">{item.description}</td>
+                                        <td className="px-4 py-2 text-right text-slate-600">1</td>
                                         <td className="px-4 py-2 text-right font-mono text-slate-600">{item.value.toFixed(2)}</td>
                                     </tr>
                                 ))}
                                 {order.products && order.products.map((prod, i) => (
                                     <tr key={`prod-${i}`}>
-                                        <td className="px-4 py-2 text-slate-700">{prod.description} (x{prod.quantity})</td>
+                                        <td className="px-4 py-2 text-slate-500 font-mono text-[9px]">{prod.productId ? prod.productId.slice(0, 4).toUpperCase() : 'PROD'}</td>
+                                        <td className="px-4 py-2 text-slate-700">{prod.description}</td>
+                                        <td className="px-4 py-2 text-right text-slate-600">{prod.quantity}</td>
                                         <td className="px-4 py-2 text-right font-mono text-slate-600">{prod.total.toFixed(2)}</td>
                                     </tr>
                                 ))}
                                 {!order.services.length && (!order.products || !order.products.length) && (
                                     <tr>
-                                        <td colSpan={2} className="px-4 py-4 text-center text-gray-400 italic">Nenhum serviço ou produto lançado.</td>
+                                        <td colSpan={4} className="px-4 py-4 text-center text-gray-400 italic">Nenhum serviço ou produto lançado.</td>
                                     </tr>
                                 )}
                             </tbody>
                             <tfoot className="bg-slate-50 font-bold border-t border-gray-200">
                                 {order.discount > 0 && (
                                     <tr>
-                                        <td className="px-4 py-2 text-right text-red-500 uppercase text-[9px]">Desconto</td>
+                                        <td colSpan={3} className="px-4 py-2 text-right text-red-500 uppercase text-[9px]">Desconto</td>
                                         <td className="px-4 py-2 text-right text-red-600 font-mono">- {order.discount.toFixed(2)}</td>
                                     </tr>
                                 )}
                                 <tr>
-                                    <td className="px-4 py-3 text-right text-slate-900 uppercase">Total</td>
+                                    <td colSpan={3} className="px-4 py-3 text-right text-slate-900 uppercase">Total</td>
                                     <td className="px-4 py-3 text-right text-lg text-blue-900">{formatCurrency(order.totalValue)}</td>
                                 </tr>
                             </tfoot>
