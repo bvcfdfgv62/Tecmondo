@@ -59,35 +59,53 @@
     print-color-adjust: exact;
   }
 
-  /* Hide everything by default */
-  body * {
-    visibility: hidden;
+  /* Hide the main app root during print */
+  #root {
+    display: none !important;
   }
 
-  /* Show only the print area */
-  #print-area,
-  #print-area * {
-    visibility: visible;
-  }
-
-  /* Position print area at top left */
-  #print-area {
+  /* Ensure the portal is visible and positioned correctly */
+  .print-portal {
+    display: block !important;
     position: absolute;
-    left: 0;
     top: 0;
+    left: 0;
     width: 210mm;
     min-height: 297mm;
     margin: 0;
-    padding: 20mm;
-    /* Professional padding */
     background: white;
-    box-shadow: none;
+    z-index: 9999;
   }
 
-  /* Hide manual print buttons or debug elements */
+  /* Reset layout for print area */
+  #print-area {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 20mm !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  /* Hide manual controls */
   .no-print,
-  button,
-  [role="button"] {
+  button[title="Imprimir OS"] {
     display: none !important;
   }
+}
+
+/* Ensure portal looks right on screen too */
+.print-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f3f4f6;
+  /* bg-gray-100 */
+  overflow-y: auto;
+  z-index: 9999;
+  /* On top of everything */
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams } from 'react-router-dom';
 import { storageService } from '../services/storage';
 import { ServiceOrder } from '../types';
@@ -18,7 +19,7 @@ const ServiceOrderPrint: React.FC = () => {
                 const data = await storageService.getServiceOrderById(id);
                 if (data) {
                     setOrder(data);
-                    // Retardando o print para garantir que imagens carreguem
+                    // Delay print to ensure images load
                     setTimeout(() => window.print(), 1000);
                 } else {
                     setError('Ordem de serviço não encontrada.');
@@ -99,8 +100,8 @@ const ServiceOrderPrint: React.FC = () => {
         </div>
     );
 
-    return (
-        <div className="min-h-screen bg-gray-100 p-8 print:p-0 print:bg-white flex justify-center">
+    const content = (
+        <div className="print-portal">
             {/* FAB Button - Hidden on Print */}
             <button
                 onClick={() => window.print()}
@@ -350,6 +351,8 @@ const ServiceOrderPrint: React.FC = () => {
             </div>
         </div>
     );
+
+    return createPortal(content, document.body);
 };
 
 export default ServiceOrderPrint;
