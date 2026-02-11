@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { storageService } from '../services/storage';
 import { ServiceOrder } from '../types';
 import { PatternLock } from '../components/PatternLock';
-import { Printer, Calendar, ShieldCheck, Smartphone, User, Wrench, AlertTriangle, DollarSign, Image as ImageIcon, MapPin, Mail, MessageSquare } from 'lucide-react';
+import { Printer, MapPin, Phone, Calendar, AlertTriangle, Wrench, CheckCircle, Smartphone, User, DollarSign, Image as ImageIcon } from 'lucide-react';
 
 const ServiceOrderPrint: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -15,17 +15,16 @@ const ServiceOrderPrint: React.FC = () => {
         const fetchOrder = async () => {
             if (!id) return;
             try {
-                // Ensure we await the result since it's an async Supabase call
                 const data = await storageService.getServiceOrderById(id);
                 if (data) {
                     setOrder(data);
-                    // Add a small delay for image loading before print
-                    setTimeout(() => window.print(), 1500);
+                    // Delay print to ensure images load
+                    setTimeout(() => window.print(), 1000);
                 } else {
                     setError('Ordem de serviço não encontrada.');
                 }
             } catch (err) {
-                console.error('Error loading order for print:', err);
+                console.error('Error loading order:', err);
                 setError('Erro ao carregar dados da OS.');
             } finally {
                 setLoading(false);
@@ -37,299 +36,286 @@ const ServiceOrderPrint: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-screen bg-white">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mb-4"></div>
-                <p className="text-slate-500 font-medium">Preparando documento para impressão...</p>
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
+                    <p className="text-gray-600 font-medium">Carregando...</p>
+                </div>
             </div>
         );
     }
 
     if (error || !order) {
         return (
-            <div className="flex items-center justify-center h-screen bg-white text-red-600 font-bold">
-                {error || 'Ordem de Serviço não encontrada.'}
+            <div className="flex items-center justify-center min-h-screen bg-gray-50 text-red-600 font-bold">
+                {error || 'OS não encontrada'}
             </div>
         );
     }
 
+    const formatCurrency = (val: number) => {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('pt-BR');
+    };
+
     const StatusBadge = ({ status }: { status: string }) => {
-        const colors: Record<string, string> = {
-            open: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
-            completed: 'bg-green-100 text-green-800 border-green-200',
-            cancelled: 'bg-red-100 text-red-800 border-red-200',
-            approved: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-            diagnosing: 'bg-purple-100 text-purple-800 border-purple-200',
-            pending_approval: 'bg-orange-100 text-orange-800 border-orange-200'
+        const statusMap: Record<string, { label: string; classes: string }> = {
+            open: { label: 'ABERTO', classes: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+            in_progress: { label: 'EM ANDAMENTO', classes: 'bg-blue-100 text-blue-800 border-blue-200' },
+            completed: { label: 'CONCLUÍDO', classes: 'bg-green-100 text-green-800 border-green-200' },
+            cancelled: { label: 'CANCELADO', classes: 'bg-red-100 text-red-800 border-red-200' },
+            approved: { label: 'APROVADO', classes: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+            diagnosing: { label: 'EM ANÁLISE', classes: 'bg-purple-100 text-purple-800 border-purple-200' },
+            pending_approval: { label: 'AGUARDANDO APROVAÇÃO', classes: 'bg-orange-100 text-orange-800 border-orange-200' },
         };
 
-        const labels: Record<string, string> = {
-            open: 'ABERTO',
-            in_progress: 'EM MANUTENÇÃO',
-            completed: 'CONCLUÍDO',
-            cancelled: 'CANCELADO',
-            approved: 'APROVADO',
-            diagnosing: 'EM ANÁLISE',
-            pending_approval: 'AGUARDANDO APROVAÇÃO'
-        };
+        const current = statusMap[status] || { label: status, classes: 'bg-gray-100 text-gray-800' };
 
         return (
-            <span className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wide border print:bg-gray-200 print:text-blue-900 ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
-                {labels[status] || status}
+            <span className={`px-3 py-1 rounded text-xs font-bold uppercase border ${current.classes} print:border-gray-300 print:bg-white print:text-black`}>
+                {current.label}
             </span>
         );
     };
 
     return (
-        <div className="print-container font-sans text-slate-800 bg-white leading-tight">
+        <div className="min-h-screen bg-gray-100 p-8 print:p-0 print:bg-white">
+            <div className="max-w-[794px] mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-[1123px] relative flex flex-col p-8 box-border text-[11px] leading-tight font-sans text-gray-800">
 
-            {/* --- HEADER --- */}
-            <header className="flex justify-between items-start mb-6 pb-6 border-b-2 border-slate-200">
-                <div className="flex items-center gap-6">
-                    <img src="/logo.jpg" alt="TECMONDO" className="h-24 w-auto object-contain" />
-                    <div>
-                        <h1 className="text-2xl font-black text-blue-900 uppercase tracking-tight print-color-blue">TECMONDO INFORMÁTICA</h1>
-                        <p className="text-sm font-bold text-red-600 uppercase tracking-widest print-color-red">Assistência Técnica Especializada</p>
-                        <div className="mt-3 space-y-1 text-xs text-slate-500 font-medium">
-                            <div className="flex items-center gap-2"><MapPin size={12} /> Rua Exemplo, 100, Bairro Exemplo - CEP 01234-567</div>
-                            <div className="flex items-center gap-2"><MessageSquare size={12} /> (00) 99999-9999</div>
-                            <div className="flex items-center gap-2"><Mail size={12} /> contato@tecmondo.com.br</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="text-right">
-                    <div className="flex flex-col items-end">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ordem de Serviço Nº</span>
-                        <span className="text-4xl font-black text-slate-900 print-color-blue mb-2">{order.id ? order.id.slice(0, 6) : '000000'}</span>
-                        <StatusBadge status={order.status} />
-                    </div>
-                    <div className="mt-4 text-xs text-slate-500 font-medium space-y-1">
-                        <div className="flex items-center justify-end gap-1">
-                            <Calendar size={12} /> Entrada: {new Date(order.createdAt).toLocaleDateString()}
-                        </div>
-                        {order.deadline && (
-                            <div className="flex items-center justify-end gap-1">
-                                <Calendar size={12} /> Previsão: {new Date(order.deadline).toLocaleDateString()}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </header>
-
-            {/* --- CLIENTE --- */}
-            <section className="mb-6 bg-slate-50 border border-slate-200 rounded p-4 print-bg-gray">
-                <h2 className="text-xs font-bold text-blue-900 uppercase mb-3 flex items-center gap-2 print-color-blue">
-                    <User size={14} /> Dados do Cliente
-                </h2>
-                <div className="grid grid-cols-2 gap-y-2 text-sm">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Nome Completo</span>
-                        <span className="font-bold text-slate-900 text-lg">{order.customerName}</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Contato</span>
-                        <span className="font-medium text-slate-800">{order.whatsapp} {order.email && `• ${order.email}`}</span>
-                    </div>
-                    <div className="col-span-2 flex flex-col mt-1 pt-2 border-t border-slate-200 border-dashed">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Endereço / Documento</span>
-                        <span className="text-slate-700">CPF/CNPJ: {order.cpf || '—'}</span>
-                    </div>
-                </div>
-            </section>
-
-            {/* --- APARELHO & SEGURANÇA (SIDE BY SIDE) --- */}
-            <div className="grid grid-cols-12 gap-6 mb-6">
-
-                {/* APARELHO */}
-                <div className="col-span-7 border border-slate-200 rounded overflow-hidden">
-                    <div className="bg-blue-900 text-white px-3 py-1.5 flex items-center gap-2 print-color-blue">
-                        <Smartphone size={14} />
-                        <h3 className="text-xs font-bold uppercase tracking-widest">Dados do Aparelho</h3>
-                    </div>
-                    <div className="p-4 space-y-3 text-sm">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <span className="block text-[10px] uppercase font-bold text-slate-400">Marca</span>
-                                <span className="font-bold text-slate-800">{order.brand}</span>
-                            </div>
-                            <div>
-                                <span className="block text-[10px] uppercase font-bold text-slate-400">Modelo</span>
-                                <span className="font-bold text-slate-800">{order.model}</span>
-                            </div>
-                        </div>
+                {/* --- HEADER --- */}
+                <header className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
+                    <div className="flex items-center gap-4">
+                        <img src="/logo.jpg" alt="TECMONDO" className="h-20 w-auto object-contain" />
                         <div>
-                            <span className="block text-[10px] uppercase font-bold text-slate-400">IMEI / Serial</span>
-                            <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-xs inline-block print-bg-gray">{order.serialNumber || 'Não informado'}</span>
-                        </div>
-                        <div className="pt-2 border-t border-dashed border-slate-200">
-                            <span className="block text-[10px] uppercase font-bold text-slate-400">Acessórios Deixados</span>
-                            <span className="text-slate-700 text-xs italic">{order.entryCondition?.noAccessories ? 'Nenhum acessório recebido' : 'Carregador, Capa...'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* SEGURANÇA */}
-                <div className="col-span-5 border border-slate-200 rounded overflow-hidden flex flex-col">
-                    <div className="bg-slate-800 text-white px-3 py-1.5 flex items-center gap-2 print-bg-gray">
-                        <ShieldCheck size={14} />
-                        <h3 className="text-xs font-bold uppercase tracking-widest">Senha do Aparelho</h3>
-                    </div>
-                    <div className="p-4 flex-1 flex flex-col items-center justify-center">
-                        {order.patternPassword ? (
-                            <div className="scale-75 origin-center">
-                                <PatternLock initialValue={order.patternPassword} readOnly size={100} />
+                            <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-tight">Tecmondo Informática</h1>
+                            <p className="text-xs font-semibold text-red-600 uppercase tracking-wider">Assistência Técnica Especializada</p>
+                            <div className="mt-2 space-y-0.5 text-[10px] text-gray-600">
+                                <p className="flex items-center gap-1.5"><MapPin size={10} /> Rua Exemplo, 123 - Centro, Cidade/UF</p>
+                                <p className="flex items-center gap-1.5"><Phone size={10} /> (11) 99999-9999 • contato@tecmondo.com.br</p>
                             </div>
-                        ) : order.entryCondition?.password ? (
-                            <div className="text-center">
-                                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">PIN / Senha</span>
-                                <span className="text-xl font-mono font-bold bg-slate-100 px-3 py-1 rounded block print-bg-gray">{order.entryCondition.password}</span>
-                            </div>
-                        ) : (
-                            <span className="text-slate-400 text-xs italic">Sem senha informada</span>
-                        )}
+                        </div>
                     </div>
-                </div>
-            </div>
+                    <div className="text-right">
+                        <div className="flex flex-col items-end mb-2">
+                            <span className="text-[10px] uppercase font-bold text-gray-400">Nº da OS</span>
+                            <span className="text-3xl font-black text-slate-900">#{order.id.slice(0, 6)}</span>
+                        </div>
+                        <StatusBadge status={order.status} />
+                        <div className="mt-2 text-[10px] text-gray-500 font-medium">
+                            <p className="flex items-center justify-end gap-1">
+                                <Calendar size={10} /> Entrada: {formatDate(order.createdAt)}
+                            </p>
+                            {order.deadline && (
+                                <p className="flex items-center justify-end gap-1">
+                                    <CheckCircle size={10} /> Previsão: {formatDate(order.deadline)}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </header>
 
-            {/* --- PROBLEMA RELATADO --- */}
-            <section className="mb-6 relative">
-                <div className="absolute top-0 left-0 w-1 h-full bg-red-600 print-color-red rounded-l"></div>
-                <div className="bg-white border border-slate-200 border-l-0 rounded-r p-4 pl-5">
-                    <h3 className="text-xs font-bold text-red-600 uppercase mb-2 flex items-center gap-2 print-color-red">
-                        <AlertTriangle size={14} /> Problema Relatado
-                    </h3>
-                    <p className="text-sm text-slate-800 italic leading-relaxed">
-                        "{order.reportedProblem}"
-                    </p>
-                </div>
-            </section>
+                {/* --- CLIENT & DEVICE GRID --- */}
+                <div className="grid grid-cols-2 gap-6 mb-6">
+                    {/* CLIENTE */}
+                    <section className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
+                            <User size={14} className="text-slate-700" />
+                            <h3 className="text-xs font-bold text-slate-800 uppercase">Dados do Cliente</h3>
+                        </div>
+                        <div className="p-3 space-y-2">
+                            <div>
+                                <span className="block text-[9px] uppercase font-bold text-gray-400">Nome</span>
+                                <span className="text-sm font-semibold text-slate-900 block">{order.customerName}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span className="block text-[9px] uppercase font-bold text-gray-400">Telefone / WhatsApp</span>
+                                    <span className="text-xs text-slate-800 block">{order.whatsapp}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-[9px] uppercase font-bold text-gray-400">CPF / CNPJ</span>
+                                    <span className="text-xs text-slate-800 block">{order.cpf || '—'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-            {/* BLOCO 5: DIAGNÓSTICO */}
-            {order.diagnosis && (
-                <div className="mb-6 relative">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-900 print-color-blue rounded-l"></div>
-                    <div className="bg-white border border-slate-200 border-l-0 rounded-r p-4 pl-5">
-                        <h3 className="text-xs font-bold text-blue-900 uppercase mb-2 flex items-center gap-2 print-color-blue">
-                            <Wrench size={14} /> Diagnóstico Técnico
+                    {/* APARELHO */}
+                    <section className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
+                            <Smartphone size={14} className="text-slate-700" />
+                            <h3 className="text-xs font-bold text-slate-800 uppercase">Dados do Aparelho</h3>
+                        </div>
+                        <div className="p-3 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <span className="block text-[9px] uppercase font-bold text-gray-400">Equipamento</span>
+                                    <span className="text-xs font-semibold text-slate-900 block">{order.equipmentType}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-[9px] uppercase font-bold text-gray-400">Marca/Modelo</span>
+                                    <span className="text-xs text-slate-800 block">{order.brand} / {order.model}</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 items-center">
+                                <div>
+                                    <span className="block text-[9px] uppercase font-bold text-gray-400">Nº de Série / IMEI</span>
+                                    <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded text-slate-700 inline-block">{order.serialNumber || '—'}</span>
+                                </div>
+                                <div className="text-right">
+                                    {order.patternPassword ? (
+                                        <div className="flex justify-end">
+                                            <div className="scale-50 origin-right -my-3">
+                                                <PatternLock initialValue={order.patternPassword} readOnly size={80} />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <span className="block text-[9px] uppercase font-bold text-gray-400">Senha (PIN)</span>
+                                            <span className="text-xs font-mono font-bold text-slate-800">{order.entryCondition.password || 'Sem senha'}</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                {/* --- PROBLEM & DIAGNOSIS --- */}
+                <div className="space-y-4 mb-6">
+                    <section className="relative pl-3 border-l-4 border-red-500 bg-red-50/30 rounded p-3">
+                        <h3 className="text-xs font-bold text-red-700 uppercase mb-1 flex items-center gap-2">
+                            <AlertTriangle size={12} /> Problema Relatado
                         </h3>
-                        <p className="text-sm text-slate-800 leading-relaxed">
-                            {order.diagnosis}
-                        </p>
-                    </div>
+                        <p className="text-xs text-slate-800 italic leading-relaxed">"{order.reportedProblem}"</p>
+                    </section>
+
+                    {order.diagnosis && (
+                        <section className="relative pl-3 border-l-4 border-blue-600 bg-blue-50/30 rounded p-3">
+                            <h3 className="text-xs font-bold text-blue-800 uppercase mb-1 flex items-center gap-2">
+                                <Wrench size={12} /> Diagnóstico Técnico
+                            </h3>
+                            <p className="text-xs text-slate-800 leading-relaxed">{order.diagnosis}</p>
+                        </section>
+                    )}
                 </div>
-            )}
 
-            {/* --- FOTOS (GRID 2x2 or Side-by-Side as needed) --- */}
-            {(order.imgBeforeFront || order.imgAfterFront) && (
-                <section className="mb-6 border border-slate-200 rounded overflow-hidden">
-                    <div className="bg-slate-100 px-3 py-1.5 flex items-center gap-2 border-b border-slate-200 print-bg-gray">
-                        <ImageIcon size={14} className="text-slate-500" />
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-700">Registro Fotográfico</h3>
+                {/* --- IMAGES --- */}
+                <section className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
+                        <ImageIcon size={14} className="text-slate-700" />
+                        <h3 className="text-xs font-bold text-slate-800 uppercase">Imagens do Reparo</h3>
                     </div>
-
-                    <div className="grid grid-cols-2 divide-x divide-slate-200">
-                        {/* ANTES */}
-                        <div className="p-3">
-                            <h4 className="text-[10px] font-bold uppercase text-center text-red-500 mb-2 print-color-red">Antes do Reparo</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="aspect-[3/4] bg-slate-50 border border-slate-100 rounded overflow-hidden flex items-center justify-center">
-                                    {order.imgBeforeFront ? <img src={order.imgBeforeFront} className="w-full h-full object-cover" /> : <span className="text-[9px] text-slate-300">Frente</span>}
+                    <div className="grid grid-cols-4 gap-4 p-4">
+                        {[
+                            { label: 'Antes (Frente)', src: order.imgBeforeFront },
+                            { label: 'Antes (Trás)', src: order.imgBeforeBack },
+                            { label: 'Depois (Frente)', src: order.imgAfterFront },
+                            { label: 'Depois (Trás)', src: order.imgAfterBack },
+                        ].map((img, idx) => (
+                            <div key={idx} className="flex flex-col items-center">
+                                <div className="w-full aspect-[3/4] border border-gray-200 rounded bg-gray-50 flex items-center justify-center overflow-hidden mb-1.5 relative">
+                                    {img.src ? (
+                                        <img src={img.src} alt={img.label} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-[9px] text-gray-400 font-medium">Sem Imagem</span>
+                                    )}
                                 </div>
-                                <div className="aspect-[3/4] bg-slate-50 border border-slate-100 rounded overflow-hidden flex items-center justify-center">
-                                    {order.imgBeforeBack ? <img src={order.imgBeforeBack} className="w-full h-full object-cover" /> : <span className="text-[9px] text-slate-300">Trás</span>}
-                                </div>
+                                <span className="text-[9px] uppercase font-bold text-gray-500">{img.label}</span>
                             </div>
-                        </div>
-
-                        {/* DEPOIS */}
-                        <div className="p-3">
-                            <h4 className="text-[10px] font-bold uppercase text-center text-green-600 mb-2">Depois do Reparo</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="aspect-[3/4] bg-slate-50 border border-slate-100 rounded overflow-hidden flex items-center justify-center">
-                                    {order.imgAfterFront ? <img src={order.imgAfterFront} className="w-full h-full object-cover" /> : <span className="text-[9px] text-slate-300">Frente</span>}
-                                </div>
-                                <div className="aspect-[3/4] bg-slate-50 border border-slate-100 rounded overflow-hidden flex items-center justify-center">
-                                    {order.imgAfterBack ? <img src={order.imgAfterBack} className="w-full h-full object-cover" /> : <span className="text-[9px] text-slate-300">Trás</span>}
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </section>
-            )}
 
-            {/* --- VALORES & SERVIÇOS --- */}
-            <section className="mb-6 border border-slate-200 rounded overflow-hidden">
-                <div className="bg-slate-50 px-3 py-1.5 flex justify-between items-center border-b border-slate-200 print-bg-gray">
-                    <div className="flex items-center gap-2 text-blue-900 print-color-blue">
-                        <Wrench size={14} />
-                        <h3 className="text-xs font-bold uppercase tracking-widest">Serviços Executados</h3>
+                {/* --- FINANCIALS --- */}
+                <section className="mb-8">
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <DollarSign size={14} className="text-slate-700" />
+                                <h3 className="text-xs font-bold text-slate-800 uppercase">Detalhamento Financeiro</h3>
+                            </div>
+                        </div>
+                        <table className="w-full text-xs">
+                            <thead className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-200">
+                                <tr>
+                                    <th className="text-left px-4 py-2 uppercase text-[9px]">Descrição</th>
+                                    <th className="text-right px-4 py-2 uppercase text-[9px] w-32">Valor (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {order.services.map((item, i) => (
+                                    <tr key={i}>
+                                        <td className="px-4 py-2 text-slate-700">{item.description}</td>
+                                        <td className="px-4 py-2 text-right font-mono text-slate-600">{item.value.toFixed(2)}</td>
+                                    </tr>
+                                ))}
+                                {order.products && order.products.map((prod, i) => (
+                                    <tr key={`prod-${i}`}>
+                                        <td className="px-4 py-2 text-slate-700">{prod.description} (x{prod.quantity})</td>
+                                        <td className="px-4 py-2 text-right font-mono text-slate-600">{prod.total.toFixed(2)}</td>
+                                    </tr>
+                                ))}
+                                {!order.services.length && (!order.products || !order.products.length) && (
+                                    <tr>
+                                        <td colSpan={2} className="px-4 py-4 text-center text-gray-400 italic">Nenhum serviço ou produto lançado.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                            <tfoot className="bg-slate-50 font-bold border-t border-gray-200">
+                                {order.discount > 0 && (
+                                    <tr>
+                                        <td className="px-4 py-2 text-right text-red-500 uppercase text-[9px]">Desconto</td>
+                                        <td className="px-4 py-2 text-right text-red-600 font-mono">- {order.discount.toFixed(2)}</td>
+                                    </tr>
+                                )}
+                                <tr>
+                                    <td className="px-4 py-3 text-right text-slate-900 uppercase">Total</td>
+                                    <td className="px-4 py-3 text-right text-lg text-blue-900">{formatCurrency(order.totalValue)}</td>
+                                </div>
+                            </tfoot>
+                        </table>
                     </div>
-                    <div className="flex items-center gap-1 text-slate-500">
-                        <DollarSign size={12} />
-                        <span className="text-[10px] font-medium">Valores em Reais (R$)</span>
+                </section>
+
+                {/* --- FOOTER & SIGNATURE --- */}
+                <footer className="mt-auto">
+                    <div className="border-t border-dashed border-gray-300 pt-4 mb-8">
+                        <p className="text-[8px] text-justify text-gray-400 leading-tight">
+                            <strong>TERMOS DE GARANTIA:</strong> 1. A garantia é de 90 dias, conforme Art. 26 do Código de Defesa do Consumidor. 2. A garantia cobre apenas o serviço executado e peças substituídas. 3. Danos causados por mau uso, quedas, líquidos ou oxidação anulam a garantia imediatamente. 4. A empresa não se responsabiliza por dados pessoais; o backup é responsabilidade do cliente. 5. Equipamentos não retirados no prazo máximo de 90 dias após aviso de conclusão poderão ser descartados ou vendidos para custear despesas de armazenamento (Lei 11.111/2005). 6. Ao assinar, o cliente declara estar ciente e de acordo com as condições acima.
+                        </p>
                     </div>
-                </div>
 
-                <table className="w-full text-sm">
-                    <tbody className="divide-y divide-slate-100">
-                        {order.services.map((s, i) => (
-                            <tr key={i}>
-                                <td className="p-2 pl-4 text-slate-700">{s.description}</td>
-                                <td className="p-2 pr-4 text-right font-mono text-slate-600 w-32">{s.value.toFixed(2)}</td>
-                            </tr>
-                        ))}
-                        {/* Filler rows if empty to keep shape */}
-                        {order.services.length === 0 && (
-                            <tr><td colSpan={2} className="p-4 text-center text-slate-400 italic text-xs">Nenhum serviço lançado ainda</td></tr>
-                        )}
-                    </tbody>
-                    <tfoot className="bg-slate-50 print-bg-gray border-t border-slate-200">
-                        {order.discount > 0 && (
-                            <tr>
-                                <td className="p-2 pl-4 text-right text-xs uppercase font-bold text-slate-500">Desconto</td>
-                                <td className="p-2 pr-4 text-right font-mono text-red-500 font-bold print-color-red">- {order.discount.toFixed(2)}</td>
-                            </tr>
-                        )}
-                        <tr>
-                            <td className="p-3 pl-4 text-right text-sm uppercase font-black text-slate-900">Total a Pagar</td>
-                            <td className="p-3 pr-4 text-right text-xl font-black text-blue-900 print-color-blue bg-blue-50/50">R$ {order.totalValue.toFixed(2)}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </section>
-
-            {/* --- TERMS & FOOTER --- */}
-            <div className="mt-8 pt-4 border-t-2 border-slate-100">
-                <div className="text-[9px] text-justify text-slate-400 mb-8 leading-tight">
-                    <strong>TERMOS:</strong> 1. Garantia de 90 dias (Art. 26 CDC). 2. Garantia cobre apenas defeito reparado; não cobre danos por líquidos/mau uso. 3. Backup de dados é responsabilidade do cliente. 4. Aparelhos não retirados em 90 dias serão considerados abandonados.
-                </div>
-
-                <div className="grid grid-cols-2 gap-12">
-                    <div className="text-center">
-                        <div className="border-b border-slate-400 mb-1 h-4 w-3/4 mx-auto"></div>
-                        <p className="font-bold text-xs uppercase text-slate-800">{order.customerName}</p>
-                        <p className="text-[9px] text-slate-400 uppercase">Assinatura do Cliente</p>
+                    <div className="grid grid-cols-2 gap-12 pt-8 mb-4">
+                        <div className="text-center">
+                            <div className="border-b border-slate-900 mb-2 w-3/4 mx-auto"></div>
+                            <p className="text-[10px] font-bold uppercase text-slate-800">{order.customerName}</p>
+                            <p className="text-[9px] uppercase text-gray-500">Assinatura do Cliente</p>
+                        </div>
+                        <div className="text-center">
+                            <div className="border-b border-slate-900 mb-2 w-3/4 mx-auto"></div>
+                            <p className="text-[10px] font-bold uppercase text-slate-800">Tecmondo Informática</p>
+                            <p className="text-[9px] uppercase text-gray-500">Assinatura do Técnico</p>
+                        </div>
                     </div>
-                    <div className="text-center">
-                        <div className="border-b border-slate-400 mb-1 h-4 w-3/4 mx-auto"></div>
-                        <p className="font-bold text-xs uppercase text-slate-800">Tecmondo Informática</p>
-                        <p className="text-[9px] text-slate-400 uppercase">Técnico Responsável</p>
-                    </div>
-                </div>
-            </div>
 
-            {/* --- PRINT FAB --- */}
-            <div className="fixed bottom-8 right-8 print:hidden z-50 animate-bounce-slow">
+                    <div className="text-center text-[9px] text-slate-300 mt-4 uppercase tracking-widest">
+                        Sistema Tecmondo Manager • Documento gerado em {new Date().toLocaleString('pt-BR')}
+                    </div>
+                </footer>
+
+                {/* --- FAB BUTTON --- */}
                 <button
                     onClick={() => window.print()}
-                    className="bg-blue-900 hover:bg-blue-800 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
-                    title="Imprimir OS"
+                    className="fixed bottom-6 right-6 bg-blue-900 hover:bg-blue-800 text-white p-4 rounded-full shadow-xl transition-transform hover:scale-105 active:scale-95 print:hidden z-50 flex items-center justify-center"
+                    title="Imprimir"
                 >
-                    <Printer size={28} />
+                    <Printer size={24} />
                 </button>
             </div>
-
         </div>
     );
 };
