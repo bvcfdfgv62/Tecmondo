@@ -64,6 +64,9 @@ const ServiceOrderDetail: React.FC = () => {
     const [serviceQuantity, setServiceQuantity] = useState(1);
     const [customServicePrice, setCustomServicePrice] = useState<string>('');
 
+    // Dynamic Catalog State
+    const [catalogItems, setCatalogItems] = useState<ServiceCatalogItem[]>([]);
+
     // Product Module State
     const [products, setProducts] = useState<Product[]>([]);
     const [searchProductQuery, setSearchProductQuery] = useState('');
@@ -80,19 +83,29 @@ const ServiceOrderDetail: React.FC = () => {
             try {
                 setLoading(true);
 
-                // Load Products for selection
+                // Load Products
                 const prodResponse = await storageService.getProducts();
                 if (prodResponse.success && prodResponse.data) {
                     setProducts(prodResponse.data);
                 }
 
+                // Load Service Catalog (Native)
+                const catalogResponse = await supabaseService.getServiceCatalog();
+                if (catalogResponse.success && catalogResponse.data) {
+                    // If empty, we might need to rely on auto-seed from Services page, 
+                    // or just show empty. But Services page auto-seeds on load. 
+                    // If user goes straight here, it might be empty.
+                    // It's better if we check length and fallback to static file ONLY if DB is empty 
+                    // to prevent breaking the flow, OR just show empty and user goes to Services page to seed.
+                    // The user asked for "native", so let's stick to DB.
+                    setCatalogItems(catalogResponse.data);
+                }
+
                 // Load Order Data
                 if (id === 'novo') {
-                    // Start fresh, no DB call needed yet
+                    // Start fresh
                     setFormData(prev => ({
                         ...prev,
-                        // Generate a temp ID or let backend handle it on save?
-                        // Better to leave ID empty and let backend assign on create
                         id: 'new',
                         createdAt: new Date().toISOString()
                     }));
@@ -331,7 +344,7 @@ const ServiceOrderDetail: React.FC = () => {
 
     // Filter Logic
     const filteredServices = selectedCategory
-        ? SERVICE_CATALOG.filter(s =>
+        ? catalogItems.filter(s =>
             s.category === selectedCategory &&
             s.description.toLowerCase().includes(searchQuery.toLowerCase())
         )

@@ -56,7 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center overflow-hidden">
                             <img src="/logo.jpg" alt="Tec Mondo" className="w-full h-full object-contain p-1" />
                         </div>
-                        <span className="text-sm font-bold tracking-tight text-white uppercase">TEC MONDO</span>
+                        <span className="text-sm font-bold tracking-tight text-white uppercase">TECMONDO</span>
                     </Link>
                 </div>
 
