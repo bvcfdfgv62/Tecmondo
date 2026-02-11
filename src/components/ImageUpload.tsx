@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { supabaseService } from '../services/supabaseService';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Card } from './ui/card';
-import { Camera, Upload, Trash2, CheckCircle, Loader2 } from 'lucide-react';
-import { cn } from '../lib/utils'; // Try import, might fail if utils doesn't export cn. Assuming present.
+import { Camera, Upload, Trash2, CheckCircle, Loader2, X, Image as ImageIcon } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 interface ImageUploadProps {
-    orderId: string; // Used for file path
+    orderId: string;
     images: {
         frontBroken?: string;
         backBroken?: string;
@@ -25,17 +25,26 @@ interface ImageUploadProps {
 
 export function ImageUpload({ orderId, images, onImagesChange, readOnly = false }: ImageUploadProps) {
     const [uploading, setUploading] = useState<string | null>(null);
+    const [dragActive, setDragActive] = useState<string | null>(null);
 
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, key: keyof typeof images) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
+    const handleFile = async (file: File, key: keyof typeof images) => {
+        if (!file.type.startsWith('image/')) {
+            alert('Por favor, selecione apenas arquivos de imagem.');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            alert('A imagem deve ter no máximo 5MB.');
+            return;
+        }
 
         setUploading(key);
         try {
-            // Path: <orderId>/<key>-<timestamp>.<ext>
+            // Generate unique path: <orderId>/<key>-<timestamp>-<random>.<ext>
             const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(7);
             const ext = file.name.split('.').pop();
-            const path = `${orderId}/${key}-${timestamp}.${ext}`;
+            const path = `${orderId}/${key}-${timestamp}-${random}.${ext}`;
 
             const response = await supabaseService.uploadOSImage(file, path);
 
@@ -56,11 +65,37 @@ export function ImageUpload({ orderId, images, onImagesChange, readOnly = false 
         }
     };
 
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, key: keyof typeof images) => {
+        const file = event.target.files?.[0];
+        if (file) handleFile(file, key);
+    };
+
+    const handleDrag = (e: React.DragEvent, key: keyof typeof images) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(key);
+        } else if (e.type === 'dragleave') {
+            setDragActive(null);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent, key: keyof typeof images) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(null);
+        if (readOnly) return;
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFile(e.dataTransfer.files[0], key);
+        }
+    };
+
     const handleDelete = (key: keyof typeof images) => {
         if (confirm('Tem certeza que deseja remover esta imagem?')) {
             onImagesChange({
                 ...images,
-                [key]: undefined // Or null, depending on backend update logic
+                [key]: undefined
             });
         }
     };
@@ -68,38 +103,54 @@ export function ImageUpload({ orderId, images, onImagesChange, readOnly = false 
     const renderUploadSlot = (key: keyof typeof images, label: string, icon: React.ReactNode) => {
         const imageUrl = images[key];
         const isUploading = uploading === key;
+        const isDragging = dragActive === key;
 
         return (
-            <Card className="p-4 flex flex-col items-center gap-3 relative overflow-hidden group hover:border-blue-300 transition-colors">
-                <Label className="font-medium text-center text-sm text-gray-700">{label}</Label>
+            <div
+                className={cn(
+                    "relative flex flex-col gap-2 group",
+                    readOnly && "opacity-90"
+                )}
+                onDragEnter={(e) => handleDrag(e, key)}
+                onDragLeave={(e) => handleDrag(e, key)}
+                onDragOver={(e) => handleDrag(e, key)}
+                onDrop={(e) => handleDrop(e, key)}
+            >
+                <Label className="text-xs font-medium text-slate-400 uppercase tracking-wide">{label}</Label>
 
-                <div className="relative w-full aspect-square bg-gray-100 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300">
+                <div className={cn(
+                    "relative w-full aspect-square rounded-lg border-2 border-dashed transition-all duration-200 overflow-hidden",
+                    isDragging ? "border-blue-500 bg-blue-500/10 scale-[1.02]" : "border-slate-700 bg-slate-900/50 hover:bg-slate-900",
+                    imageUrl ? "border-solid border-slate-600" : "hover:border-slate-500",
+                    isUploading && "opacity-80 cursor-wait"
+                )}>
                     {isUploading ? (
-                        <div className="flex flex-col items-center gap-2 text-blue-500">
-                            <Loader2 className="h-8 w-8 animate-spin" />
-                            <span className="text-xs">Enviando...</span>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900/80 z-20">
+                            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                            <span className="text-xs font-medium text-slate-300">Enviando...</span>
                         </div>
                     ) : imageUrl ? (
                         <div className="relative w-full h-full group/image">
                             <img
                                 src={imageUrl}
                                 alt={label}
-                                className="w-full h-full object-cover rounded-md"
+                                className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            {/* Actions Overlay */}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/image:opacity-100 transition-all duration-200 flex items-center justify-center gap-3 backdrop-blur-[2px]">
                                 <a
                                     href={imageUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-2 bg-white/20 hover:bg-white/40 rounded-full text-white backdrop-blur-sm"
+                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
                                     title="Visualizar"
                                 >
-                                    <Camera className="h-5 w-5" />
+                                    <ImageIcon className="h-5 w-5" />
                                 </a>
                                 {!readOnly && (
                                     <button
                                         onClick={() => handleDelete(key)}
-                                        className="p-2 bg-red-500/80 hover:bg-red-600 rounded-full text-white backdrop-blur-sm"
+                                        className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-500 hover:text-red-400 rounded-full transition-colors"
                                         title="Remover"
                                     >
                                         <Trash2 className="h-5 w-5" />
@@ -108,41 +159,49 @@ export function ImageUpload({ orderId, images, onImagesChange, readOnly = false 
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center text-gray-400">
-                            {icon}
-                            <span className="block text-xs mt-1">Carregar Foto</span>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500 transition-colors group-hover:text-slate-400">
+                            <div className={cn(
+                                "p-3 rounded-full bg-slate-800 transition-transform duration-300 group-hover:scale-110",
+                                isDragging && "bg-blue-500/20 text-blue-500"
+                            )}>
+                                {icon}
+                            </div>
+                            <div className="text-center px-4">
+                                <span className="text-xs font-medium block">
+                                    {isDragging ? "Solte aqui" : "Clique ou arraste"}
+                                </span>
+                            </div>
                         </div>
                     )}
 
-                    {!readOnly && !imageUrl && !isUploading && (
+                    {/* File Input */}
+                    {!readOnly && !isUploading && (
                         <input
                             type="file"
                             accept="image/*"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             onChange={(e) => handleFileChange(e, key)}
                             disabled={isUploading}
                         />
                     )}
                 </div>
-            </Card>
+            </div>
         );
     };
 
     return (
-        <div className="w-full">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Camera className="h-5 w-5" />
+        <Card className="p-6 bg-slate-950/50 border-white/5">
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <Camera className="h-5 w-5 text-blue-500" />
                 Imagens do Aparelho
             </h3>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {renderUploadSlot('frontBroken', 'Frente (Quebrado)', <span className="text-2xl">📱</span>)}
-                {renderUploadSlot('backBroken', 'Trás (Quebrado)', <span className="text-2xl">🔄</span>)}
-                {renderUploadSlot('frontRepaired', 'Frente (Reparado)', <span className="text-2xl text-green-500">✨</span>)}
-                {renderUploadSlot('backRepaired', 'Trás (Reparado)', <span className="text-2xl text-green-500">✅</span>)}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {renderUploadSlot('frontBroken', 'Frente (Entrada)', <Upload className="h-5 w-5" />)}
+                {renderUploadSlot('backBroken', 'Trás (Entrada)', <Upload className="h-5 w-5" />)}
+                {renderUploadSlot('frontRepaired', 'Frente (Saída)', <CheckCircle className="h-5 w-5 text-emerald-500" />)}
+                {renderUploadSlot('backRepaired', 'Trás (Saída)', <CheckCircle className="h-5 w-5 text-emerald-500" />)}
             </div>
-        </div>
+        </Card>
     );
 }
-
-// Need to ensure utils import is correct. if it fails I'll just remove `cn` usage in next step.
