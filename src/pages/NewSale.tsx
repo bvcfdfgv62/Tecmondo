@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storageService } from '../services/storage';
 import { Product, Client } from '../types';
-import { ArrowLeft, ShoppingCart, User, Search, Plus, Trash2, CreditCard, Banknote, QrCode, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, User, Search, Plus, Trash2, CreditCard, Banknote, QrCode, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,8 @@ const NewSale: React.FC = () => {
     // Data Sources
     const [clients, setClients] = useState<Client[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     // Selection States
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -35,11 +37,33 @@ const NewSale: React.FC = () => {
     const [paymentMethod, setPaymentMethod] = useState<'credit' | 'debit' | 'money' | 'pix'>('pix');
 
     useEffect(() => {
-        const loadJava = async () => {
-            setClients(await storageService.getClients());
-            setProducts(await storageService.getProducts());
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [clientsResponse, productsResponse] = await Promise.all([
+                    storageService.getClients(),
+                    storageService.getProducts()
+                ]);
+
+                if (clientsResponse.success && clientsResponse.data) {
+                    setClients(clientsResponse.data);
+                } else {
+                    console.error('Failed to load clients:', clientsResponse.error);
+                }
+
+                if (productsResponse.success && productsResponse.data) {
+                    setProducts(productsResponse.data);
+                } else {
+                    console.error('Failed to load products:', productsResponse.error);
+                }
+            } catch (err) {
+                console.error('Error loading data:', err);
+                setError('Falha ao carregar dados. Tente recarregar a página.');
+            } finally {
+                setLoading(false);
+            }
         };
-        loadJava();
+        loadData();
     }, []);
 
     // Filter Logic
@@ -112,17 +136,43 @@ const NewSale: React.FC = () => {
             status: 'completed' as const
         };
 
-        await storageService.createSale(saleData);
-        alert('Venda realizada com sucesso!');
-        navigate('/dashboard'); // Or maybe a sales history page? for now dashboard is fine
+        try {
+            const response = await storageService.createSale(saleData);
+            if (response.success) {
+                alert('Venda realizada com sucesso!');
+                navigate('/dashboard'); // Or maybe a sales history page? for now dashboard is fine
+            } else {
+                alert('Erro ao realizar venda: ' + response.error);
+            }
+        } catch (error) {
+            console.error('Error creating sale:', error);
+            alert('Erro ao realizar venda. Tente novamente.');
+        }
     };
 
     const totalCartValue = cartItems.reduce((acc, item) => acc + item.total, 0);
 
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex h-screen flex-col items-center justify-center gap-4">
+                <p className="text-red-500">{error}</p>
+                <Button onClick={() => window.location.reload()}>Recarregar</Button>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-6 animate-fade-in text-text-primary max-w-6xl mx-auto pb-20">
+        <div className="space-y-6 text-slate-100 max-w-6xl mx-auto pb-20">
             {/* Header */}
-            <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur-md z-20 py-4 border-b border-white/5">
+            <div className="flex items-center justify-between sticky top-0 bg-slate-950/95 backdrop-blur-md z-20 py-4 border-b border-white/5">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
                         <ArrowLeft size={20} />
@@ -131,7 +181,7 @@ const NewSale: React.FC = () => {
                         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                             <ShoppingCart className="text-emerald-500" /> Nova Venda
                         </h1>
-                        <p className="text-xs text-muted-foreground">Venda direta de produtos</p>
+                        <p className="text-xs text-slate-400">Venda direta de produtos</p>
                     </div>
                 </div>
             </div>
@@ -142,9 +192,9 @@ const NewSale: React.FC = () => {
                 <div className="lg:col-span-7 space-y-6">
 
                     {/* 1. Client Selection */}
-                    <Card className="border-white/5 bg-surface/30">
+                    <Card className="border-white/5 bg-slate-900/50">
                         <CardHeader className="pb-3 border-b border-white/5">
-                            <CardTitle className="text-sm font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
+                            <CardTitle className="text-sm font-bold uppercase text-slate-400 tracking-wider flex items-center gap-2">
                                 <User size={16} /> Cliente
                             </CardTitle>
                         </CardHeader>
@@ -152,7 +202,7 @@ const NewSale: React.FC = () => {
                             {!selectedClient ? (
                                 <div className="space-y-2">
                                     <div className="relative">
-                                        <Search className="absolute left-2 top-2.5 text-muted-foreground" size={14} />
+                                        <Search className="absolute left-2 top-2.5 text-slate-500" size={14} />
                                         <Input
                                             placeholder="Buscar cliente..."
                                             className="pl-8 bg-slate-950 border-slate-700"
@@ -169,11 +219,11 @@ const NewSale: React.FC = () => {
                                                     className="w-full text-left px-3 py-2 text-sm hover:bg-slate-800 transition-colors border-b border-slate-800 last:border-0"
                                                 >
                                                     <div className="font-bold text-white">{client.name}</div>
-                                                    <div className="text-xs text-muted-foreground">{client.cpfOrCnpj}</div>
+                                                    <div className="text-xs text-slate-500">{client.cpfOrCnpj}</div>
                                                 </button>
                                             ))}
                                             {filteredClients.length === 0 && (
-                                                <div className="p-2 text-xs text-muted-foreground text-center">Nenhum cliente encontrado</div>
+                                                <div className="p-2 text-xs text-slate-500 text-center">Nenhum cliente encontrado</div>
                                             )}
                                         </div>
                                     )}
@@ -193,7 +243,7 @@ const NewSale: React.FC = () => {
                     </Card>
 
                     {/* 2. Product Selection */}
-                    <Card className="border-white/5 bg-surface/30">
+                    <Card className="border-white/5 bg-slate-900/50">
                         <CardHeader className="pb-3 border-b border-white/5">
                             <CardTitle className="text-sm font-bold uppercase text-blue-400 tracking-wider flex items-center gap-2">
                                 <Search size={16} /> Selecionar Produtos
@@ -202,7 +252,7 @@ const NewSale: React.FC = () => {
                         <CardContent className="p-0">
                             <div className="p-4 border-b border-white/5">
                                 <div className="relative">
-                                    <Search className="absolute left-2 top-2.5 text-muted-foreground" size={14} />
+                                    <Search className="absolute left-2 top-2.5 text-slate-500" size={14} />
                                     <Input
                                         placeholder="Buscar produto por nome ou código..."
                                         className="pl-8 bg-slate-950 border-slate-700"
@@ -212,7 +262,7 @@ const NewSale: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="max-h-[300px] overflow-y-auto p-2">
+                            <div className="max-h-[300px] overflow-y-auto p-2 custom-scrollbar">
                                 {filteredProducts.map(product => (
                                     <button
                                         key={product.id}
@@ -243,11 +293,11 @@ const NewSale: React.FC = () => {
                                 <div className="p-4 bg-black/20 border-t border-white/10">
                                     <div className="flex items-end gap-3">
                                         <div className="flex-1 space-y-1">
-                                            <p className="text-xs text-muted-foreground">Produto Selecionado</p>
+                                            <p className="text-xs text-slate-500">Produto Selecionado</p>
                                             <div className="text-sm font-bold text-white">{selectedProduct.description}</div>
                                         </div>
                                         <div className="w-20 space-y-1">
-                                            <label className="text-[10px] text-muted-foreground">Qtd.</label>
+                                            <label className="text-[10px] text-slate-500">Qtd.</label>
                                             <Input
                                                 type="number"
                                                 className="h-8 bg-slate-900 border-slate-700"
@@ -271,18 +321,18 @@ const NewSale: React.FC = () => {
                 {/* RIGHT COLUMN: CART & PAYMENT */}
                 <div className="lg:col-span-5 space-y-6">
 
-                    <Card className="border-white/5 bg-surface/30 sticky top-24 h-fit">
+                    <Card className="border-white/5 bg-slate-900/50 sticky top-24 h-fit">
                         <CardHeader className="bg-black/20 border-b border-white/5">
-                            <CardTitle className="text-sm font-bold uppercase text-muted-foreground tracking-wider flex justify-between">
+                            <CardTitle className="text-sm font-bold uppercase text-slate-400 tracking-wider flex justify-between">
                                 <span>Carrinho</span>
                                 <span className="text-white">{cartItems.length} itens</span>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             {/* Items List */}
-                            <div className="max-h-[300px] overflow-y-auto p-4 space-y-2 min-h-[200px]">
+                            <div className="max-h-[300px] overflow-y-auto p-4 space-y-2 min-h-[200px] custom-scrollbar">
                                 {cartItems.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50 py-10">
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50 py-10">
                                         <ShoppingCart size={32} className="mb-2" />
                                         <span className="text-xs">Carrinho Vazio</span>
                                     </div>
@@ -291,7 +341,7 @@ const NewSale: React.FC = () => {
                                         <div key={item.id} className="flex justify-between items-center bg-white/5 p-2 rounded border border-white/5 group hover:border-white/10">
                                             <div className="flex-1 min-w-0 pr-2">
                                                 <div className="text-sm font-medium text-white truncate">{item.product.description}</div>
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className="text-xs text-slate-500">
                                                     {item.quantity}x R$ {item.product.resalePrice.toFixed(2)}
                                                 </div>
                                             </div>
@@ -311,7 +361,7 @@ const NewSale: React.FC = () => {
 
                             {/* Payment Method */}
                             <div className="p-4 border-t border-white/10 space-y-3 bg-black/10">
-                                <label className="text-[10px] uppercase tracking-wider text-muted-foreground block mb-2">Forma de Pagamento</label>
+                                <label className="text-[10px] uppercase tracking-wider text-slate-500 block mb-2">Forma de Pagamento</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => setPaymentMethod('credit')}
@@ -355,7 +405,7 @@ const NewSale: React.FC = () => {
                             {/* Total & Action */}
                             <div className="p-4 bg-black/40 border-t border-white/10 space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground uppercase tracking-wider">Total a Pagar</span>
+                                    <span className="text-sm text-slate-500 uppercase tracking-wider">Total a Pagar</span>
                                     <span className="text-2xl font-bold text-white font-mono">R$ {totalCartValue.toFixed(2)}</span>
                                 </div>
                                 <Button
