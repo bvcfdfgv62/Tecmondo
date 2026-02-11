@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams } from 'react-router-dom';
 import { storageService } from '../services/storage';
 import { supabaseService } from '../services/supabaseService';
@@ -75,8 +74,8 @@ const ServiceOrderPrint: React.FC = () => {
         return new Date(dateString).toLocaleDateString('pt-BR');
     };
 
-    const content = (
-        <div className="print-portal">
+    return (
+        <div className="min-h-screen bg-white">
             {/* FAB Button - Hidden on Print */}
             <button
                 onClick={() => window.print()}
@@ -87,7 +86,7 @@ const ServiceOrderPrint: React.FC = () => {
             </button>
 
             {/* Print Container A4 */}
-            <div id="print-area" className="w-[210mm] min-h-[297mm] bg-white shadow-xl print:shadow-none p-[20mm] relative flex flex-col text-slate-800 font-sans leading-tight box-border">
+            <div id="print-area" className="w-full max-w-[210mm] mx-auto bg-white min-h-screen print:min-h-0 md:shadow-xl print:shadow-none p-8 md:p-[20mm] relative flex flex-col text-slate-800 font-sans leading-tight box-border print:w-full print:max-w-none print:p-0 print:m-0">
 
                 {/* --- HEADER (Company Info) --- */}
                 <header className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
@@ -231,8 +230,6 @@ const ServiceOrderPrint: React.FC = () => {
             </div>
         </div>
     );
-
-    return createPortal(content, document.body);
 };
 
 export default ServiceOrderPrint;

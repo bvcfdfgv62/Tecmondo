@@ -51,46 +51,30 @@
     margin: 0;
   }
 
-  body {
-    background: white;
-    margin: 0;
-    padding: 0;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+  margin: 0;
+  size: auto;
+}
 
-  /* Hide the main app root during print */
-  #root {
-    display: none !important;
-  }
+body {
+  background-color: white !important;
+  color: black !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
 
-  /* Ensure the portal is visible and positioned correctly */
-  .print-portal {
-    display: block !important;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 210mm;
-    min-height: 297mm;
-    margin: 0;
-    background: white;
-    z-index: 9999;
-  }
+/* Hide non-print elements globally if marked */
+.no-print,
+button,
+.print\:hidden {
+  display: none !important;
+}
 
-  /* Reset layout for print area */
-  #print-area {
-    width: 100% !important;
-    height: 100% !important;
-    padding: 20mm !important;
-    box-shadow: none !important;
-    background: white !important;
-  }
-
-  /* Hide manual controls */
-  .no-print,
-  button[title="Imprimir OS"] {
-    display: none !important;
-  }
+/* Ensure print area fills page */
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
 }
 
 /* Ensure portal looks right on screen too */
