@@ -46,56 +46,26 @@
 }
 
 @media print {
-  body {
-    background-color: white !important;
-    background: white !important;
-    color: black !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  body * {
+    visibility: hidden;
   }
 
-  .no-print {
-    display: none !important;
+  #print-area,
+  #print-area * {
+    visibility: visible;
   }
 
-  .print-container {
-    width: 210mm;
-    /* Fixed width for visual consistency */
-    min-height: 297mm;
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
     padding: 0;
-    /* Margin handled by @page, but we can add internal padding if needed, user asked for 20mm margin in @page */
-    background: white;
-    color: black;
-    margin: 0 auto;
-    /* Center it */
   }
 
-  /* Reset */
-  * {
-    color: black !important;
-    text-shadow: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Allow specific colors for the premium look - override the * black force for specific colored elements if browser supports */
-  .print-color-blue {
-    color: #1e3a8a !important;
-    /* Blue-900 */
-    border-color: #1e3a8a !important;
-  }
-
-  .print-color-red {
-    color: #dc2626 !important;
-    /* Red-600 */
-  }
-
-  .print-bg-gray {
-    background-color: #f9fafb !important;
-    /* Gray-50 */
-  }
-
-  /* Hide everything else */
-  body>*:not(.print-container) {
-    display: none !important;
+  @page {
+    size: auto;
+    margin: 0mm;
   }
 }

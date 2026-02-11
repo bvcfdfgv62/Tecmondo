@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { storageService } from '../services/storage';
 import { ServiceOrder } from '../types';
 import { PatternLock } from '../components/PatternLock';
-import { Printer, MapPin, Phone, Calendar, AlertTriangle, Wrench, CheckCircle, Smartphone, User, DollarSign, Image as ImageIcon, Box } from 'lucide-react';
+import { Printer, MapPin, Phone, Calendar, AlertTriangle, Wrench, CheckCircle, Smartphone, User, DollarSign, Image as ImageIcon } from 'lucide-react';
 
 const ServiceOrderPrint: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -15,12 +15,16 @@ const ServiceOrderPrint: React.FC = () => {
         const fetchOrder = async () => {
             if (!id) return;
             try {
+                console.log('Fetching order with ID:', id);
                 const data = await storageService.getServiceOrderById(id);
+                console.log('Order Data Received:', data);
+
                 if (data) {
                     setOrder(data);
                     // Delay print to ensure images load
                     setTimeout(() => window.print(), 1000);
                 } else {
+                    console.error('Order data is null/undefined');
                     setError('Ordem de serviço não encontrada.');
                 }
             } catch (err) {
@@ -39,7 +43,7 @@ const ServiceOrderPrint: React.FC = () => {
             <div className="flex items-center justify-center min-h-screen bg-gray-50">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Carregando...</p>
+                    <p className="text-gray-600 font-medium">Carregando dados da OS...</p>
                 </div>
             </div>
         );
@@ -48,7 +52,7 @@ const ServiceOrderPrint: React.FC = () => {
     if (error || !order) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-50 text-red-600 font-bold">
-                {error || 'OS não encontrada'}
+                {error || 'OS não encontrada ou vazia.'}
             </div>
         );
     }
@@ -91,8 +95,11 @@ const ServiceOrderPrint: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-100 p-8 print:p-0 print:bg-white">
-            <div className="max-w-[794px] mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-[1123px] relative flex flex-col p-8 box-border text-[11px] leading-tight font-sans text-gray-800">
+        <div className="min-h-screen bg-gray-100 p-8 print:p-0 print:bg-white text-gray-800">
+            {/* Debug Element */}
+            <h1 className="hidden print:block text-xs font-mono text-gray-300 absolute top-0 left-0">DEBUG: PRINT MODE ACTIVE</h1>
+
+            <div id="print-area" className="max-w-[794px] mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-[1123px] relative flex flex-col p-8 box-border text-[11px] leading-tight font-sans">
 
                 {/* --- HEADER --- */}
                 <header className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
