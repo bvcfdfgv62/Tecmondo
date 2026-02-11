@@ -128,9 +128,9 @@ const ServiceOrderPrint: React.FC = () => {
                 <header className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
                     <div className="flex items-center gap-6">
                         <div>
-                            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-1 leading-none">
-                                {settings?.companyName || 'Tecmondo Assistência'}
-                            </h1>
+                            {/* Logo */}
+                            <img src="/logo.jpg" alt="Tecmondo Logo" className="h-16 object-contain mb-4" />
+
                             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
                                 Comprovante de Entrada / Saída
                             </p>
