@@ -19,20 +19,32 @@ const ProductDetail: React.FC = () => {
             try {
                 setLoading(true);
                 setError(null);
+
                 if (id === 'novo') {
-                    const newProduct = await storageService.createProduct({});
-                    setProduct(newProduct);
+                    // Start fresh
+                    setProduct({
+                        id: '',
+                        barcode: '',
+                        description: '',
+                        purchasePrice: 0,
+                        resalePrice: 0,
+                        stockQuantity: 0,
+                        imageUrl: '',
+                        supplier: '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    } as Product);
                 } else if (id) {
-                    const data = await storageService.getProductById(id);
-                    if (data) {
-                        setProduct(data);
+                    const response = await storageService.getProductById(id);
+                    if (response.success && response.data) {
+                        setProduct(response.data);
                     } else {
-                        setError('Produto não encontrado');
+                        setError(response.error || 'Produto não encontrado');
                     }
                 }
             } catch (err) {
                 console.error('Erro ao carregar produto:', err);
-                setError('Falha ao carregar produto. Tente novamente.');
+                setError('Falha crítica ao carregar produto.');
             } finally {
                 setLoading(false);
             }
@@ -65,12 +77,22 @@ const ProductDetail: React.FC = () => {
                 return;
             }
             try {
-                await storageService.saveProduct(product);
-                alert('Produto salvo com sucesso!');
-                navigate('/produtos');
+                let response;
+                if (id === 'novo') {
+                    response = await storageService.createProduct(product);
+                } else {
+                    response = await storageService.saveProduct(product);
+                }
+
+                if (response.success) {
+                    alert('Produto salvo com sucesso!');
+                    navigate('/produtos');
+                } else {
+                    alert(`Erro ao salvar: ${response.error}`);
+                }
             } catch (err) {
                 console.error('Erro ao salvar produto:', err);
-                alert('Erro ao salvar produto. Verifique o console.');
+                alert('Erro crítico ao salvar produto.');
             }
         }
     };
@@ -78,11 +100,15 @@ const ProductDetail: React.FC = () => {
     const handleDelete = async () => {
         if (product && window.confirm('Tem certeza que deseja excluir este produto?')) {
             try {
-                await storageService.deleteProduct(product.id);
-                navigate('/produtos');
+                const response = await storageService.deleteProduct(product.id);
+                if (response.success) {
+                    navigate('/produtos');
+                } else {
+                    alert(`Erro ao excluir: ${response.error}`);
+                }
             } catch (err) {
                 console.error('Erro ao excluir produto:', err);
-                alert('Erro ao excluir produto.');
+                alert('Erro crítico ao excluir produto.');
             }
         }
     };

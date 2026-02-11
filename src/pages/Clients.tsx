@@ -18,11 +18,17 @@ const Clients: React.FC = () => {
         const loadClients = async () => {
             try {
                 setLoading(true);
-                const data = await storageService.getClients();
-                setClients(data);
+                setError(null);
+                const response = await storageService.getClients();
+
+                if (response.success && response.data) {
+                    setClients(response.data);
+                } else {
+                    setError(response.error || 'Erro ao carregar clientes');
+                }
             } catch (err) {
                 console.error('Erro ao carregar clientes:', err);
-                setError('Falha ao carregar clientes. Verifique sua conexão.');
+                setError('Falha crítica ao conectar com o servidor.');
             } finally {
                 setLoading(false);
             }

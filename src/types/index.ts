@@ -20,6 +20,12 @@ export interface CashFlowStats {
     monthlyExpense: number;
 }
 
+export interface ApiResponse<T> {
+    success: boolean;
+    data: T | null;
+    error: string | null;
+}
+
 export interface SystemSettings {
     companyName: string;
     cnpj: string;

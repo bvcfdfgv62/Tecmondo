@@ -9,78 +9,98 @@ import {
     Sale,
     Client,
     SystemSettings,
-    CashFlowStats
+    CashFlowStats,
+    ApiResponse
 } from '../types';
+
+const createResponse = <T>(data: T | null, error: any): ApiResponse<T> => {
+    if (error) {
+        console.error('API Error:', error);
+        return {
+            success: false,
+            data: null,
+            error: error.message || 'Erro desconhecido ao processar requisição'
+        };
+    }
+    return {
+        success: true,
+        data: data,
+        error: null
+    };
+};
 
 export const supabaseService = {
     // --- Settings Methods ---
-    getSettings: async (): Promise<SystemSettings> => {
+    getSettings: async (): Promise<ApiResponse<SystemSettings>> => {
         const { data, error } = await supabase
             .from('settings')
             .select('*')
             .limit(1)
             .single();
 
-        if (error || !data) {
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found", which we handle gracefully
+            return createResponse(null, error);
+        }
+
+        if (!data) {
             // Return default settings if none exist
-            return {
+            return createResponse({
                 companyName: 'Tec Mondo Assistência',
                 cnpj: '00.000.000/0001-00',
                 phone: '(11) 99999-9999',
                 email: 'contato@tec-mondo.com',
                 address: 'Rua Exemplo, 123 - Centro, SP'
-            };
+            }, null);
         }
 
-        return {
+        return createResponse({
             companyName: data.company_name,
             cnpj: data.cnpj,
             phone: data.phone,
             email: data.email,
             address: data.address
-        };
+        }, null);
     },
 
-    saveSettings: async (settings: SystemSettings) => {
+    saveSettings: async (settings: SystemSettings): Promise<ApiResponse<void>> => {
         // Check if settings exist
-        const { count } = await supabase.from('settings').select('*', { count: 'exact', head: true });
+        const { count, error: countError } = await supabase.from('settings').select('*', { count: 'exact', head: true });
+
+        if (countError) return createResponse(null, countError);
 
         if (count && count > 0) {
             // Update first row
-            // We'd need the ID, but assuming single row for now.
-            // Better to upsert based on a fixed ID if possible, but let's just update the first one found or insert.
-            // Actually, let's just insert one if empty, or update if exists.
-            // Since we don't know the ID easily without fetching, let's fetch first.
             const { data } = await supabase.from('settings').select('id').limit(1).single();
             if (data) {
-                await supabase.from('settings').update({
+                const { error: updateError } = await supabase.from('settings').update({
                     company_name: settings.companyName,
                     cnpj: settings.cnpj,
                     phone: settings.phone,
                     email: settings.email,
                     address: settings.address
                 }).eq('id', data.id);
+                if (updateError) return createResponse(null, updateError);
             }
         } else {
-            await supabase.from('settings').insert({
+            const { error: insertError } = await supabase.from('settings').insert({
                 company_name: settings.companyName,
                 cnpj: settings.cnpj,
                 phone: settings.phone,
                 email: settings.email,
                 address: settings.address
             });
+            if (insertError) return createResponse(null, insertError);
         }
+        return createResponse(null, null);
     },
 
     // --- Budget Methods ---
-    getBudgets: async (): Promise<BudgetRequest[]> => {
+    getBudgets: async (): Promise<ApiResponse<BudgetRequest[]>> => {
         const { data, error } = await supabase.from('budgets').select('*').order('created_at', { ascending: false });
-        if (error) {
-            console.error('Error fetching budgets:', error);
-            return [];
-        }
 
-        return (data || []).map((b: any) => ({
+        if (error) return createResponse(null, error);
+
+        const budgets = (data || []).map((b: any) => ({
             id: b.id,
             customerName: b.customer_name || 'Cliente',
             email: b.email || '',
@@ -93,17 +113,11 @@ export const supabaseService = {
             createdAt: b.created_at,
             approvedValue: b.approved_value
         }));
+
+        return createResponse(budgets, null);
     },
 
-    // Correction: The schema for budgets I designed in SQL was:
-    // customer_name, email, whatsapp, equipment_text, problem_description, approved_value
-    // But type BudgetRequest has brand, model, equipmentType.
-    // I should probably update the valid DB schema or map it.
-    // For now I'll map equipmentType + brand + model to equipment_text or just ignore missing fields?
-    // User asked to save EVERYTHING. I might have missed some fields in SQL.
-    // I'll proceed with best effort mapping and maybe update schema if critical.
-
-    addBudget: async (budget: Omit<BudgetRequest, 'id' | 'createdAt' | 'status'>) => {
+    addBudget: async (budget: Omit<BudgetRequest, 'id' | 'createdAt' | 'status'>): Promise<ApiResponse<BudgetRequest>> => {
         const { data, error } = await supabase.from('budgets').insert({
             customer_name: budget.customerName,
             email: budget.email,
@@ -114,26 +128,41 @@ export const supabaseService = {
             approved_value: budget.approvedValue
         }).select().single();
 
-        if (error) throw error;
-        return data;
+        if (error) return createResponse(null, error);
+
+        const newBudget = {
+            id: data.id,
+            customerName: data.customer_name || 'Cliente',
+            email: data.email || '',
+            whatsapp: data.whatsapp || '',
+            equipmentType: (data.equipment_text as any) || 'Outro',
+            brand: '',
+            model: '',
+            problemDescription: data.problem_description || '',
+            status: data.status || 'pending',
+            createdAt: data.created_at,
+            approvedValue: data.approved_value
+        };
+
+        return createResponse(newBudget, null);
     },
 
-    updateBudgetStatus: async (id: string, status: BudgetRequest['status'], approvedValue?: number) => {
-        await supabase.from('budgets').update({
+    updateBudgetStatus: async (id: string, status: BudgetRequest['status'], approvedValue?: number): Promise<ApiResponse<void>> => {
+        const { error } = await supabase.from('budgets').update({
             status,
             approved_value: approvedValue
         }).eq('id', id);
+
+        return createResponse(null, error);
     },
 
     // --- Service Order Methods ---
-    getServiceOrders: async (): Promise<ServiceOrder[]> => {
+    getServiceOrders: async (): Promise<ApiResponse<ServiceOrder[]>> => {
         const { data, error } = await supabase.from('service_orders').select('*').order('created_at', { ascending: false });
-        if (error) {
-            console.error('Error fetching service orders:', error);
-            return [];
-        }
 
-        return (data || []).map((o: any) => ({
+        if (error) return createResponse(null, error);
+
+        const orders = (data || []).map((o: any) => ({
             id: o.id,
             createdAt: o.created_at,
             status: o.status || 'open',
@@ -151,20 +180,19 @@ export const supabaseService = {
             discount: o.discount || 0,
             totalValue: o.total_value || 0,
             paymentStatus: o.payment_status || 'pending',
-            // Map other fields
-            budgetId: undefined // Add support if needed
+            budgetId: undefined
         }));
+
+        return createResponse(orders, null);
     },
 
-    getServiceOrderById: async (id: string): Promise<ServiceOrder | undefined> => {
+    getServiceOrderById: async (id: string): Promise<ApiResponse<ServiceOrder>> => {
         const { data: o, error } = await supabase.from('service_orders').select('*').eq('id', id).single();
 
-        if (error || !o) {
-            console.error('Error fetching service order by ID:', error);
-            return undefined;
-        }
+        if (error) return createResponse(null, error);
+        if (!o) return createResponse(null, { message: 'OS não encontrada' });
 
-        return {
+        const order = {
             id: o.id,
             createdAt: o.created_at,
             status: o.status || 'open',
@@ -186,9 +214,11 @@ export const supabaseService = {
             repairCategory: o.repair_category || undefined,
             budgetId: undefined
         };
+
+        return createResponse(order, null);
     },
 
-    createServiceOrder: async (data: Partial<ServiceOrder>): Promise<ServiceOrder> => {
+    createServiceOrder: async (data: Partial<ServiceOrder>): Promise<ApiResponse<ServiceOrder>> => {
         // Use default values for a new OS
         const { data: newOrder, error } = await supabase.from('service_orders').insert({
             status: 'open',
@@ -200,9 +230,9 @@ export const supabaseService = {
             total_value: 0
         }).select().single();
 
-        if (error) throw error;
+        if (error) return createResponse(null, error);
 
-        return {
+        const createdOrder = {
             id: newOrder.id,
             createdAt: newOrder.created_at,
             status: newOrder.status,
@@ -222,9 +252,11 @@ export const supabaseService = {
             paymentStatus: newOrder.payment_status || 'pending',
             budgetId: undefined
         };
+
+        return createResponse(createdOrder, null);
     },
 
-    saveServiceOrder: async (order: ServiceOrder) => {
+    saveServiceOrder: async (order: ServiceOrder): Promise<ApiResponse<void>> => {
         const { error } = await supabase.from('service_orders').update({
             status: order.status,
             technician: order.technician,
@@ -246,26 +278,24 @@ export const supabaseService = {
             updated_at: new Date().toISOString()
         }).eq('id', order.id);
 
-        if (error) throw error;
+        if (error) return createResponse(null, error);
 
         // If completed or paid, maybe register transaction?
-        // User logic might want this elsewhere, but good to keep in mind.
         if (order.status === 'completed' && order.paymentStatus === 'paid') {
-            // We could auto-generate transaction here if not exists
             await supabaseService.addTransactionFromOS(order);
         }
+
+        return createResponse(null, null);
     },
 
     // ... (rest of methods)
 
     // --- Transactions ---
-    getTransactions: async (): Promise<Transaction[]> => {
+    getTransactions: async (): Promise<ApiResponse<Transaction[]>> => {
         const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false });
-        if (error) {
-            console.error('Error fetching transactions:', error);
-            return [];
-        }
-        return (data || []).map((t: any) => ({
+        if (error) return createResponse(null, error);
+
+        const transactions = (data || []).map((t: any) => ({
             id: t.id,
             date: t.date,
             description: t.description || 'Sem descrição',
@@ -273,9 +303,11 @@ export const supabaseService = {
             type: t.type || 'expense',
             category: t.category || 'Geral'
         }));
+
+        return createResponse(transactions, null);
     },
 
-    addTransaction: async (transaction: Omit<Transaction, 'id' | 'date'>) => {
+    addTransaction: async (transaction: Omit<Transaction, 'id' | 'date'>): Promise<ApiResponse<void>> => {
         const { error } = await supabase.from('transactions').insert({
             description: transaction.description,
             amount: transaction.amount,
@@ -283,35 +315,36 @@ export const supabaseService = {
             category: transaction.category,
             date: new Date().toISOString()
         });
-        if (error) throw error;
+
+        return createResponse(null, error);
     },
 
-    addTransactionFromOS: async (os: ServiceOrder) => {
+    addTransactionFromOS: async (os: ServiceOrder): Promise<ApiResponse<void>> => {
         // Check if duplicate transaction exists
-        // We can query by reference_id if we store it.
-        // For now, text search matches existing logic
-        const { count } = await supabase.from('transactions')
+        const { count, error: checkError } = await supabase.from('transactions')
             .select('*', { count: 'exact', head: true })
             .ilike('description', `%Serviço ${os.id}%`);
 
+        if (checkError) return createResponse(null, checkError);
+
         if (count === 0) {
-            await supabaseService.addTransaction({
+            return await supabaseService.addTransaction({
                 description: `Serviço ${os.id} - ${os.customerName}`,
                 amount: os.totalValue,
                 type: 'income',
                 category: 'Serviços'
             });
         }
+
+        return createResponse(null, null);
     },
 
     // --- Clients ---
-    getClients: async (): Promise<Client[]> => {
+    getClients: async (): Promise<ApiResponse<Client[]>> => {
         const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
-        if (error) {
-            console.error('Error fetching clients:', error);
-            return [];
-        }
-        return (data || []).map((c: any) => ({
+        if (error) return createResponse(null, error);
+
+        const clients = (data || []).map((c: any) => ({
             id: c.id,
             createdAt: c.created_at,
             name: c.name || 'Cliente Sem Nome',
@@ -321,12 +354,16 @@ export const supabaseService = {
             address: c.address || '',
             notes: c.notes || ''
         }));
+
+        return createResponse(clients, null);
     },
 
-    getClientById: async (id: string): Promise<Client | undefined> => {
+    getClientById: async (id: string): Promise<ApiResponse<Client>> => {
         const { data, error } = await supabase.from('clients').select('*').eq('id', id).single();
-        if (error) return undefined;
-        return {
+        if (error) return createResponse(null, error);
+        if (!data) return createResponse(null, { message: 'Cliente não encontrado' });
+
+        const client = {
             id: data.id,
             createdAt: data.created_at,
             name: data.name,
@@ -336,9 +373,11 @@ export const supabaseService = {
             address: data.address,
             notes: data.notes
         };
+
+        return createResponse(client, null);
     },
 
-    saveClient: async (client: Client) => {
+    saveClient: async (client: Client): Promise<ApiResponse<void>> => {
         const { error } = await supabase.from('clients').upsert({
             id: client.id.length < 10 ? undefined : client.id, // Handle legacy IDs vs UUIDs
             updated_at: new Date().toISOString(),
@@ -349,10 +388,11 @@ export const supabaseService = {
             address: client.address,
             notes: client.notes
         });
-        if (error) throw error;
+
+        return createResponse(null, error);
     },
 
-    createClient: async (data: Partial<Client>): Promise<Client> => {
+    createClient: async (data: Partial<Client>): Promise<ApiResponse<Client>> => {
         const { data: newClient, error } = await supabase.from('clients').insert({
             name: data.name,
             email: data.email,
@@ -362,9 +402,9 @@ export const supabaseService = {
             notes: data.notes
         }).select().single();
 
-        if (error) throw error;
+        if (error) return createResponse(null, error);
 
-        return {
+        const client = {
             id: newClient.id,
             createdAt: newClient.created_at,
             name: newClient.name,
@@ -374,13 +414,18 @@ export const supabaseService = {
             address: newClient.address,
             notes: newClient.notes
         };
+
+        return createResponse(client, null);
     },
 
-    getClientHistory: async (email: string) => {
-        const { data: orders } = await supabase.from('service_orders').select('*').eq('email', email).order('created_at', { ascending: false });
-        const { data: budgets } = await supabase.from('budgets').select('*').eq('email', email).order('created_at', { ascending: false });
+    getClientHistory: async (email: string): Promise<ApiResponse<{ orders: any[], budgets: any[] }>> => {
+        const { data: orders, error: ordersError } = await supabase.from('service_orders').select('*').eq('email', email).order('created_at', { ascending: false });
+        const { data: budgets, error: budgetsError } = await supabase.from('budgets').select('*').eq('email', email).order('created_at', { ascending: false });
 
-        return {
+        if (ordersError) return createResponse(null, ordersError);
+        if (budgetsError) return createResponse(null, budgetsError);
+
+        const history = {
             orders: orders ? orders.map((o: any) => ({
                 id: o.id,
                 createdAt: o.created_at,
@@ -414,16 +459,16 @@ export const supabaseService = {
                 approvedValue: b.approved_value
             })) : []
         };
+
+        return createResponse(history, null);
     },
 
     // --- Products ---
-    getProducts: async (): Promise<Product[]> => {
+    getProducts: async (): Promise<ApiResponse<Product[]>> => {
         const { data, error } = await supabase.from('products').select('*').order('description', { ascending: true });
-        if (error) {
-            console.error('Error fetching products:', error);
-            return [];
-        }
-        return (data || []).map((p: any) => ({
+        if (error) return createResponse(null, error);
+
+        const products = (data || []).map((p: any) => ({
             id: p.id,
             barcode: p.barcode || '',
             description: p.description || 'Produto Sem Nome',
@@ -435,12 +480,16 @@ export const supabaseService = {
             createdAt: p.created_at,
             updatedAt: p.updated_at
         }));
+
+        return createResponse(products, null);
     },
 
-    getProductById: async (id: string): Promise<Product | undefined> => {
+    getProductById: async (id: string): Promise<ApiResponse<Product>> => {
         const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
-        if (error) return undefined;
-        return {
+        if (error) return createResponse(null, error);
+        if (!data) return createResponse(null, { message: 'Produto não encontrado' });
+
+        const product = {
             id: data.id,
             barcode: data.barcode,
             description: data.description,
@@ -452,9 +501,11 @@ export const supabaseService = {
             createdAt: data.created_at,
             updatedAt: data.updated_at
         };
+
+        return createResponse(product, null);
     },
 
-    saveProduct: async (product: Product) => {
+    saveProduct: async (product: Product): Promise<ApiResponse<void>> => {
         const { error } = await supabase.from('products').upsert({
             id: product.id.length < 10 ? undefined : product.id,
             barcode: product.barcode,
@@ -466,10 +517,11 @@ export const supabaseService = {
             supplier: product.supplier,
             updated_at: new Date().toISOString()
         });
-        if (error) throw error;
+
+        return createResponse(null, error);
     },
 
-    createProduct: async (data: Partial<Product>): Promise<Product> => {
+    createProduct: async (data: Partial<Product>): Promise<ApiResponse<Product>> => {
         const { data: newProduct, error } = await supabase.from('products').insert({
             barcode: data.barcode,
             description: data.description,
@@ -480,9 +532,9 @@ export const supabaseService = {
             supplier: data.supplier
         }).select().single();
 
-        if (error) throw error;
+        if (error) return createResponse(null, error);
 
-        return {
+        const product = {
             id: newProduct.id,
             barcode: newProduct.barcode,
             description: newProduct.description,
@@ -494,21 +546,21 @@ export const supabaseService = {
             createdAt: newProduct.created_at,
             updatedAt: newProduct.updated_at
         };
+
+        return createResponse(product, null);
     },
 
-    deleteProduct: async (id: string) => {
+    deleteProduct: async (id: string): Promise<ApiResponse<void>> => {
         const { error } = await supabase.from('products').delete().eq('id', id);
-        if (error) throw error;
+        return createResponse(null, error);
     },
 
     // --- Sales ---
-    getSales: async (): Promise<Sale[]> => {
+    getSales: async (): Promise<ApiResponse<Sale[]>> => {
         const { data, error } = await supabase.from('sales').select('*').order('created_at', { ascending: false });
-        if (error) {
-            console.error('Error fetching sales:', error);
-            return [];
-        }
-        return (data || []).map((s: any) => ({
+        if (error) return createResponse(null, error);
+
+        const sales = (data || []).map((s: any) => ({
             id: s.id,
             createdAt: s.created_at,
             customerName: s.customer_name || 'Cliente',
@@ -517,9 +569,11 @@ export const supabaseService = {
             status: s.status || 'completed',
             items: s.items || []
         }));
+
+        return createResponse(sales, null);
     },
 
-    createSale: async (sale: Omit<Sale, 'id' | 'createdAt'>): Promise<Sale> => {
+    createSale: async (sale: Omit<Sale, 'id' | 'createdAt'>): Promise<ApiResponse<Sale>> => {
         const { data: newSale, error } = await supabase.from('sales').insert({
             customer_name: sale.customerName,
             client_id: sale.clientId,
@@ -529,11 +583,10 @@ export const supabaseService = {
             items: sale.items
         }).select().single();
 
-        if (error) throw error;
+        if (error) return createResponse(null, error);
 
-        // Update stock (Simple decrement, not atomic transaction in this version but good enough)
+        // Update stock
         for (const item of sale.items) {
-            // Fetch current stock
             const { data: prod } = await supabase.from('products').select('stock_quantity').eq('id', item.productId).single();
             if (prod) {
                 await supabase.from('products').update({
@@ -550,7 +603,7 @@ export const supabaseService = {
             type: 'income'
         });
 
-        return {
+        const createdSale = {
             id: newSale.id,
             createdAt: newSale.created_at,
             customerName: newSale.customer_name,
@@ -559,57 +612,64 @@ export const supabaseService = {
             status: newSale.status,
             items: newSale.items
         };
+
+        return createResponse(createdSale, null);
     },
 
-    getDashboardKPIs: async (): Promise<DashboardStats> => {
+    getDashboardKPIs: async (): Promise<ApiResponse<DashboardStats>> => {
         // Monthly Income
         const now = new Date();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const { data: incomeData } = await supabase.from('transactions')
+        const { data: incomeData, error: incomeError } = await supabase.from('transactions')
             .select('amount')
             .eq('type', 'income')
             .gte('date', firstDay);
 
+        if (incomeError) return createResponse(null, incomeError);
+
         const monthlyIncome = incomeData?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
 
         // Pending Budgets
-        const { count: pendingBudgets } = await supabase.from('budgets')
+        const { count: pendingBudgets, error: budgetError } = await supabase.from('budgets')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'pending');
 
         // Active OS
-        const { count: activeOS } = await supabase.from('service_orders')
+        const { count: activeOS, error: osError } = await supabase.from('service_orders')
             .select('*', { count: 'exact', head: true })
             .in('status', ['open', 'diagnosing', 'pending_approval', 'approved', 'in_progress']);
 
         // Unique Clients
-        const { count: uniqueClients } = await supabase.from('clients')
+        const { count: uniqueClients, error: clientError } = await supabase.from('clients')
             .select('*', { count: 'exact', head: true });
 
-        return {
+        return createResponse({
             monthlyIncome,
             pendingBudgets: pendingBudgets || 0,
             activeOS: activeOS || 0,
             uniqueClients: uniqueClients || 0
-        };
+        }, null);
     },
 
-    getCashFlowStats: async (): Promise<CashFlowStats> => {
+    getCashFlowStats: async (): Promise<ApiResponse<CashFlowStats>> => {
         const now = new Date();
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-        // Fetch all transactions to calculate total balance (this might be heavy over time, but ok for now)
-        // Ideally we should have a 'balance' field in a separate table updated by triggers, or just sum everything.
-        const { data: allTransactions } = await supabase.from('transactions').select('amount, type');
+        // Total Balance
+        const { data: allTransactions, error: txError } = await supabase.from('transactions').select('amount, type');
+
+        if (txError) return createResponse(null, txError);
 
         const totalBalance = allTransactions?.reduce((acc, curr) => {
             return acc + (curr.type === 'income' ? curr.amount : -curr.amount);
         }, 0) || 0;
 
         // Monthly Stats
-        const { data: monthlyTransactions } = await supabase.from('transactions')
+        const { data: monthlyTransactions, error: mTxError } = await supabase.from('transactions')
             .select('amount, type')
             .gte('date', firstDay);
+
+        if (mTxError) return createResponse(null, mTxError);
 
         const monthlyIncome = monthlyTransactions
             ?.filter(t => t.type === 'income')
@@ -619,10 +679,10 @@ export const supabaseService = {
             ?.filter(t => t.type === 'expense')
             .reduce((acc, curr) => acc + curr.amount, 0) || 0;
 
-        return {
+        return createResponse({
             totalBalance,
             monthlyIncome,
             monthlyExpense
-        };
+        }, null);
     }
 };

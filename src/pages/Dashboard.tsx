@@ -20,31 +20,37 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await storageService.getDashboardKPIs();
-        setKpis(data);
+        const kpiResponse = await storageService.getDashboardKPIs();
+        if (kpiResponse.success && kpiResponse.data) {
+          setKpis(kpiResponse.data);
+        }
 
         // Prepare chart data (Last 7 days balance)
-        const transactions = await storageService.getTransactions();
-        const last7Days = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date();
-          d.setDate(d.getDate() - (6 - i));
-          return d;
-        });
+        const transactionsResponse = await storageService.getTransactions();
 
-        const graph = last7Days.map(date => {
-          const dateStr = date.toISOString().split('T')[0];
-          const dayTransactions = transactions.filter(t => t.date.startsWith(dateStr));
-          const dailyBalance = dayTransactions.reduce((acc, t) => {
-            return acc + (t.type === 'income' ? t.amount : -t.amount);
-          }, 0);
+        if (transactionsResponse.success && transactionsResponse.data) {
+          const transactions = transactionsResponse.data;
+          const last7Days = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (6 - i));
+            return d;
+          });
 
-          return {
-            name: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-            value: dailyBalance
-          };
-        });
+          const graph = last7Days.map(date => {
+            const dateStr = date.toISOString().split('T')[0];
+            const dayTransactions = transactions.filter(t => t.date.startsWith(dateStr));
+            const dailyBalance = dayTransactions.reduce((acc, t) => {
+              return acc + (t.type === 'income' ? t.amount : -t.amount);
+            }, 0);
 
-        setChartData(graph);
+            return {
+              name: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+              value: dailyBalance
+            };
+          });
+
+          setChartData(graph);
+        }
       } catch (error) {
         console.error('Erro ao carregar dados do dashboard:', error);
       }

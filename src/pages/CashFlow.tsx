@@ -22,24 +22,44 @@ const CashFlow: React.FC = () => {
   }, []);
 
   const refreshData = async () => {
-    setTransactions(await storageService.getTransactions());
-    setStats(await storageService.getCashFlowStats());
+    try {
+      const transactionsResponse = await storageService.getTransactions();
+      if (transactionsResponse.success && transactionsResponse.data) {
+        setTransactions(transactionsResponse.data);
+      }
+
+      const statsResponse = await storageService.getCashFlowStats();
+      if (statsResponse.success && statsResponse.data) {
+        setStats(statsResponse.data);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
+    }
   };
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTransaction.description || !newTransaction.amount) return;
 
-    await storageService.addTransaction({
-      description: newTransaction.description,
-      amount: parseFloat(newTransaction.amount),
-      type: newTransaction.type,
-      category: newTransaction.category || 'Geral'
-    });
+    try {
+      const response = await storageService.addTransaction({
+        description: newTransaction.description,
+        amount: parseFloat(newTransaction.amount),
+        type: newTransaction.type,
+        category: newTransaction.category || 'Geral'
+      });
 
-    setNewTransaction({ description: '', amount: '', type: 'income', category: '' });
-    setShowForm(false);
-    refreshData();
+      if (response.success) {
+        setNewTransaction({ description: '', amount: '', type: 'income', category: '' });
+        setShowForm(false);
+        refreshData();
+      } else {
+        alert('Erro ao salvar transação: ' + response.error);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar transação:', error);
+      alert('Erro interno ao salvar transação.');
+    }
   };
 
   // Preparar dados para o gráfico (últimos 10 dias)

@@ -18,11 +18,17 @@ const Products: React.FC = () => {
         const loadProducts = async () => {
             try {
                 setLoading(true);
-                const data = await storageService.getProducts();
-                setProducts(data);
+                setError(null);
+                const response = await storageService.getProducts();
+
+                if (response.success && response.data) {
+                    setProducts(response.data);
+                } else {
+                    setError(response.error || 'Erro ao carregar produtos');
+                }
             } catch (err) {
                 console.error('Erro ao carregar produtos:', err);
-                setError('Falha ao carregar produtos. Tente recarregar.');
+                setError('Falha crítica ao conectar com o servidor.');
             } finally {
                 setLoading(false);
             }

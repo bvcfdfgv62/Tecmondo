@@ -26,11 +26,17 @@ const ServiceOrders: React.FC = () => {
     const loadOrders = async () => {
         try {
             setLoading(true);
-            const data = await storageService.getServiceOrders();
-            setOrders(data);
+            setError(null);
+            const response = await storageService.getServiceOrders();
+
+            if (response.success && response.data) {
+                setOrders(response.data);
+            } else {
+                setError(response.error || 'Erro ao carregar OS');
+            }
         } catch (err) {
             console.error('Erro ao carregar OS:', err);
-            setError('Falha ao carregar OS. Tente recarregar.');
+            setError('Falha crítica ao carregar ordens de serviço.');
         } finally {
             setLoading(false);
         }

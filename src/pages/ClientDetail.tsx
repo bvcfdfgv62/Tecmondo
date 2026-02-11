@@ -21,31 +21,43 @@ const ClientDetail: React.FC = () => {
             try {
                 setLoading(true);
                 setError(null);
+
                 if (id === 'novo') {
-                    const newClient = await storageService.createClient({});
-                    setClient(newClient);
+                    // Start fresh
+                    setClient({
+                        id: '',
+                        name: '',
+                        email: '',
+                        whatsapp: '',
+                        cpfOrCnpj: '',
+                        address: '',
+                        notes: '',
+                        createdAt: new Date().toISOString()
+                    } as Client);
                 } else if (id) {
-                    const data = await storageService.getClientById(id);
-                    if (data) {
-                        setClient(data);
-                        if (data.email) {
-                            const history = await storageService.getClientHistory(data.email);
-                            setHistory(history);
+                    const response = await storageService.getClientById(id);
+                    if (response.success && response.data) {
+                        setClient(response.data);
+
+                        if (response.data.email) {
+                            const historyResponse = await storageService.getClientHistory(response.data.email);
+                            if (historyResponse.success && historyResponse.data) {
+                                setHistory(historyResponse.data);
+                            }
                         }
                     } else {
-                        setError('Cliente não encontrado');
-                        // Optional: Navigate back after a delay or let user decide
+                        setError(response.error || 'Cliente não encontrado');
                     }
                 }
             } catch (err) {
                 console.error('Erro ao carregar detalhes do cliente:', err);
-                setError('Falha ao carregar detalhes do cliente. Tente novamente.');
+                setError('Falha crítica ao conectar com o servidor.');
             } finally {
                 setLoading(false);
             }
         };
         loadClient();
-    }, [id]); // Removed navigate from dependencies to avoid loop if navigate is unstable
+    }, [id]);
 
     const handleChange = (field: keyof Client, value: string) => {
         if (client) {
@@ -56,12 +68,22 @@ const ClientDetail: React.FC = () => {
     const handleSave = async () => {
         if (client) {
             try {
-                await storageService.saveClient(client);
-                alert('Cliente salvo com sucesso!');
-                navigate('/clientes');
+                let response;
+                if (id === 'novo') {
+                    response = await storageService.createClient(client);
+                } else {
+                    response = await storageService.saveClient(client);
+                }
+
+                if (response.success) {
+                    alert('Cliente salvo com sucesso!');
+                    navigate('/clientes');
+                } else {
+                    alert(`Erro ao salvar: ${response.error}`);
+                }
             } catch (err) {
                 console.error('Erro ao salvar cliente:', err);
-                alert('Erro ao salvar cliente. Verifique o console.');
+                alert('Erro crítico ao salvar cliente.');
             }
         }
     };
