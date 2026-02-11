@@ -15,16 +15,12 @@ const ServiceOrderPrint: React.FC = () => {
         const fetchOrder = async () => {
             if (!id) return;
             try {
-                console.log('Fetching order with ID:', id);
                 const data = await storageService.getServiceOrderById(id);
-                console.log('Order Data Received:', data);
-
                 if (data) {
                     setOrder(data);
-                    // Delay print to ensure images load
+                    // Retardando o print para garantir que imagens carreguem
                     setTimeout(() => window.print(), 1000);
                 } else {
-                    console.error('Order data is null/undefined');
                     setError('Ordem de serviço não encontrada.');
                 }
             } catch (err) {
@@ -40,10 +36,10 @@ const ServiceOrderPrint: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+            <div className="flex items-center justify-center min-h-screen bg-white">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Carregando dados da OS...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
+                    <p className="text-slate-600 font-medium">Carregando Ordem de Serviço...</p>
                 </div>
             </div>
         );
@@ -51,8 +47,8 @@ const ServiceOrderPrint: React.FC = () => {
 
     if (error || !order) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50 text-red-600 font-bold">
-                {error || 'OS não encontrada ou vazia.'}
+            <div className="flex items-center justify-center min-h-screen bg-white text-red-600 font-bold">
+                {error || 'OS não encontrada'}
             </div>
         );
     }
@@ -62,147 +58,161 @@ const ServiceOrderPrint: React.FC = () => {
     };
 
     const formatDate = (dateString: string) => {
+        if (!dateString) return '-';
         return new Date(dateString).toLocaleDateString('pt-BR');
     };
 
-    const StatusBadge = ({ status }: { status: string }) => {
-        const statusMap: Record<string, { label: string; classes: string }> = {
-            open: { label: 'ABERTO', classes: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-            in_progress: { label: 'EM ANDAMENTO', classes: 'bg-blue-100 text-blue-800 border-blue-200' },
-            completed: { label: 'CONCLUÍDO', classes: 'bg-green-100 text-green-800 border-green-200' },
-            cancelled: { label: 'CANCELADO', classes: 'bg-red-100 text-red-800 border-red-200' },
-            approved: { label: 'APROVADO', classes: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-            diagnosing: { label: 'EM ANÁLISE', classes: 'bg-purple-100 text-purple-800 border-purple-200' },
-            pending_approval: { label: 'AGUARDANDO APROVAÇÃO', classes: 'bg-orange-100 text-orange-800 border-orange-200' },
+    const getStatusBadge = (status: string) => {
+        const map: Record<string, string> = {
+            open: "bg-yellow-100 text-yellow-800 border-yellow-200",
+            in_progress: "bg-blue-100 text-blue-800 border-blue-200",
+            completed: "bg-green-100 text-green-800 border-green-200",
+            cancelled: "bg-red-100 text-red-800 border-red-200",
+            approved: "bg-indigo-100 text-indigo-800 border-indigo-200",
+            diagnosing: "bg-purple-100 text-purple-800 border-purple-200",
+            pending_approval: "bg-orange-100 text-orange-800 border-orange-200",
         };
 
-        const current = statusMap[status] || { label: status, classes: 'bg-gray-100 text-gray-800' };
+        const labelMap: Record<string, string> = {
+            open: 'ABERTO',
+            in_progress: 'EM ANDAMENTO',
+            completed: 'CONCLUÍDO',
+            cancelled: 'CANCELADO',
+            approved: 'APROVADO',
+            diagnosing: 'EM ANÁLISE',
+            pending_approval: 'AGUARDANDO APROVAÇÃO',
+        };
 
         return (
-            <span className={`px-3 py-1 rounded text-xs font-bold uppercase border ${current.classes} print:border-gray-300 print:bg-white print:text-black`}>
-                {current.label}
+            <span className={`px-3 py-1 rounded text-xs font-bold uppercase border ${map[status] || "bg-gray-100 text-gray-800 border-gray-200"}`}>
+                {labelMap[status] || status}
             </span>
         );
     };
 
     const ConditionCheckbox = ({ label, checked }: { label: string; checked: boolean }) => (
         <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 border border-slate-400 rounded-sm flex items-center justify-center ${checked ? 'bg-slate-800 border-slate-800' : 'bg-white'}`}>
-                {checked && <CheckCircle size={10} className="text-white" />}
+            <div className={`w-4 h-4 border border-slate-400 rounded-sm flex items-center justify-center ${checked ? 'bg-slate-800 border-slate-800' : 'bg-white'}`}>
+                {checked && <CheckCircle size={12} className="text-white" />}
             </div>
             <span className={`text-[10px] uppercase font-bold ${checked ? 'text-slate-900' : 'text-slate-400'}`}>{label}</span>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-gray-100 p-8 print:p-0 print:bg-white text-gray-800">
-            {/* Debug Element */}
-            <h1 className="hidden print:block text-xs font-mono text-gray-300 absolute top-0 left-0">DEBUG: PRINT MODE ACTIVE</h1>
+        <div className="min-h-screen bg-gray-100 p-8 print:p-0 print:bg-white flex justify-center">
+            {/* FAB Button - Hidden on Print */}
+            <button
+                onClick={() => window.print()}
+                className="fixed bottom-8 right-8 bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 print:hidden z-50 flex items-center justify-center"
+                title="Imprimir OS"
+            >
+                <Printer size={24} />
+            </button>
 
-            <div id="print-area" className="max-w-[794px] mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-[1123px] relative flex flex-col p-8 box-border text-[11px] leading-tight font-sans">
+            {/* Print Container A4 */}
+            <div id="print-area" className="w-[210mm] min-h-[297mm] bg-white shadow-xl print:shadow-none p-[20mm] relative flex flex-col text-slate-800 font-sans leading-tight box-border">
 
                 {/* --- HEADER --- */}
-                <header className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-6">
-                    <div className="flex items-center gap-4">
-                        <img src="/logo.jpg" alt="TECMONDO" className="h-20 w-auto object-contain" />
+                <header className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
+                    <div className="flex items-center gap-6">
+                        {/* Logo Placeholder - Adjust src as needed */}
+                        <div className="h-24 w-24 bg-slate-100 rounded-lg flex items-center justify-center border border-slate-200 overflow-hidden">
+                            <img src="/logo.jpg" alt="LOGO" className="w-full h-full object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                            <span className="text-xs text-slate-400 font-bold">LOGO</span>
+                        </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900 uppercase tracking-tight">Tecmondo Informática</h1>
-                            <p className="text-xs font-semibold text-red-600 uppercase tracking-wider">Assistência Técnica Especializada</p>
-                            <div className="mt-2 space-y-0.5 text-[10px] text-gray-600">
-                                <p className="flex items-center gap-1.5"><MapPin size={10} /> Rua Exemplo, 123 - Centro, Cidade/UF</p>
-                                <p className="flex items-center gap-1.5"><Phone size={10} /> (11) 99999-9999 • contato@tecmondo.com.br</p>
+                            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-1">Tecmondo</h1>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Assistência Técnica Especializada</p>
+                            <div className="space-y-1 text-xs text-slate-600">
+                                <p className="flex items-center gap-2"><MapPin size={12} /> Rua Exemplo, 123 - Centro, Cidade/UF</p>
+                                <p className="flex items-center gap-2"><Phone size={12} /> (11) 99999-9999 • contato@tecmondo.com.br</p>
+                                <p className="flex items-center gap-2 font-mono text-[10px]">CNPJ: 00.000.000/0001-00</p>
                             </div>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <div className="flex flex-col items-end mb-2">
-                            <span className="text-[10px] uppercase font-bold text-gray-400">Nº da OS</span>
-                            <span className="text-3xl font-black text-slate-900">#{order.id.slice(0, 6)}</span>
+                    <div className="text-right flex flex-col items-end">
+                        <div className="mb-4">
+                            <span className="block text-[10px] uppercase font-bold text-slate-400 mb-0.5">Número da OS</span>
+                            <span className="text-4xl font-black text-slate-900 tracking-tighter">#{order.id.slice(0, 6)}</span>
                         </div>
-                        <StatusBadge status={order.status} />
-                        <div className="mt-2 text-[10px] text-gray-500 font-medium">
-                            <p className="flex items-center justify-end gap-1">
-                                <Calendar size={10} /> Entrada: {formatDate(order.createdAt)}
-                            </p>
-                            {order.deadline && (
-                                <p className="flex items-center justify-end gap-1">
-                                    <CheckCircle size={10} /> Previsão: {formatDate(order.deadline)}
-                                </p>
-                            )}
+                        {getStatusBadge(order.status)}
+                        <div className="mt-3 text-[10px] font-medium text-slate-500">
+                            <p>Entrada: {formatDate(order.createdAt)}</p>
+                            {order.deadline && <p>Previsão: {formatDate(order.deadline)}</p>}
                         </div>
                     </div>
                 </header>
 
-                {/* --- CLIENT & DEVICE GRID --- */}
-                <div className="grid grid-cols-2 gap-6 mb-6">
+                {/* --- TWO COLUMNS: CLIENT & DEVICE --- */}
+                <div className="grid grid-cols-2 gap-8 mb-8">
                     {/* CLIENTE */}
-                    <section className="border border-gray-200 rounded-lg overflow-hidden flex flex-col md:h-full">
-                        <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
-                            <User size={14} className="text-slate-700" />
-                            <h3 className="text-xs font-bold text-slate-800 uppercase">Dados do Cliente</h3>
+                    <section>
+                        <div className="flex items-center gap-2 mb-3 border-b border-slate-200 pb-2">
+                            <User size={16} className="text-slate-900" />
+                            <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide">Dados do Cliente</h2>
                         </div>
-                        <div className="p-3 space-y-2 flex-grow">
+                        <div className="space-y-3 pl-1">
                             <div>
-                                <span className="block text-[9px] uppercase font-bold text-gray-400">Nome</span>
-                                <span className="text-sm font-semibold text-slate-900 block">{order.customerName}</span>
+                                <label className="block text-[10px] uppercase font-bold text-slate-400">Nome Completo</label>
+                                <p className="text-sm font-bold text-slate-900">{order.customerName}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <span className="block text-[9px] uppercase font-bold text-gray-400">Telefone / WhatsApp</span>
-                                    <span className="text-xs text-slate-800 block">{order.whatsapp}</span>
+                                    <label className="block text-[10px] uppercase font-bold text-slate-400">Telefone / WhatsApp</label>
+                                    <p className="text-xs font-semibold text-slate-800">{order.whatsapp}</p>
                                 </div>
                                 <div>
-                                    <span className="block text-[9px] uppercase font-bold text-gray-400">CPF / CNPJ</span>
-                                    <span className="text-xs text-slate-800 block">{order.cpf || '—'}</span>
+                                    <label className="block text-[10px] uppercase font-bold text-slate-400">CPF / Documento</label>
+                                    <p className="text-xs font-semibold text-slate-800">{order.cpf || '—'}</p>
                                 </div>
                             </div>
                             <div>
-                                <span className="block text-[9px] uppercase font-bold text-gray-400">Email</span>
-                                <span className="text-xs text-slate-800 block truncate">{order.email || '—'}</span>
+                                <label className="block text-[10px] uppercase font-bold text-slate-400">Email</label>
+                                <p className="text-xs text-slate-600">{order.email || '—'}</p>
                             </div>
                         </div>
                     </section>
 
                     {/* APARELHO */}
-                    <section className="border border-gray-200 rounded-lg overflow-hidden flex flex-col md:h-full">
-                        <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
-                            <Smartphone size={14} className="text-slate-700" />
-                            <h3 className="text-xs font-bold text-slate-800 uppercase">Dados do Aparelho</h3>
+                    <section>
+                        <div className="flex items-center gap-2 mb-3 border-b border-slate-200 pb-2">
+                            <Smartphone size={16} className="text-slate-900" />
+                            <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide">Dados do Equipamento</h2>
                         </div>
-                        <div className="p-3 space-y-2 flex-grow">
-                            <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-3 pl-1">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <span className="block text-[9px] uppercase font-bold text-gray-400">Equipamento</span>
-                                    <span className="text-xs font-semibold text-slate-900 block">{order.equipmentType}</span>
+                                    <label className="block text-[10px] uppercase font-bold text-slate-400">Tipo</label>
+                                    <p className="text-xs font-bold text-slate-900">{order.equipmentType}</p>
                                 </div>
                                 <div>
-                                    <span className="block text-[9px] uppercase font-bold text-gray-400">Marca/Modelo</span>
-                                    <span className="text-xs text-slate-800 block">{order.brand} / {order.model}</span>
+                                    <label className="block text-[10px] uppercase font-bold text-slate-400">Marca / Modelo</label>
+                                    <p className="text-xs font-semibold text-slate-800">{order.brand} {order.model}</p>
                                 </div>
                             </div>
                             <div>
-                                <span className="block text-[9px] uppercase font-bold text-gray-400">Nº de Série / IMEI</span>
-                                <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded text-slate-700 inline-block">{order.serialNumber || '—'}</span>
+                                <label className="block text-[10px] uppercase font-bold text-slate-400">Nº Série / IMEI</label>
+                                <p className="text-xs font-mono text-slate-600 bg-slate-100 inline-block px-1 rounded">{order.serialNumber || '—'}</p>
                             </div>
 
-                            {/* Checkboxes Conditions */}
-                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-gray-200 mt-2">
+                            {/* Checkboxes */}
+                            <div className="grid grid-cols-2 gap-y-2 gap-x-1 pt-2">
                                 <ConditionCheckbox label="Liga" checked={order.entryCondition.turnOn} />
                                 <ConditionCheckbox label="Tela Quebrada" checked={order.entryCondition.brokenScreen} />
                                 <ConditionCheckbox label="Sem Acessórios" checked={order.entryCondition.noAccessories} />
                                 <ConditionCheckbox label="Com Senha" checked={order.entryCondition.hasPassword || !!order.patternPassword} />
                             </div>
 
-                            <div className="pt-2 border-t border-dashed border-gray-200 mt-2 flex justify-between items-center">
-                                <span className="text-[9px] uppercase font-bold text-gray-400">Senha / Padrão</span>
+                            {/* Senha Visual */}
+                            <div className="pt-2 mt-2 border-t border-dashed border-slate-200 flex items-center justify-between">
+                                <span className="text-[9px] uppercase font-bold text-slate-400">Senha / Padrão</span>
                                 {order.patternPassword ? (
-                                    <div className="scale-50 origin-right -my-3">
-                                        <PatternLock initialValue={order.patternPassword} readOnly size={60} />
+                                    <div className="scale-[0.4] origin-right -my-4">
+                                        <PatternLock initialValue={order.patternPassword} readOnly size={80} />
                                     </div>
                                 ) : (
-                                    <span className="text-xs font-mono font-bold text-slate-800 bg-gray-100 px-2 py-0.5 rounded">
-                                        {order.entryCondition.password || 'Sem Senha'}
-                                    </span>
+                                    <span className="text-xs font-mono font-bold bg-slate-100 px-2 py-0.5 rounded">{order.entryCondition.password || 'Sem Senha'}</span>
                                 )}
                             </div>
                         </div>
@@ -210,149 +220,133 @@ const ServiceOrderPrint: React.FC = () => {
                 </div>
 
                 {/* --- PROBLEM & DIAGNOSIS --- */}
-                <div className="space-y-4 mb-6">
-                    <section className="relative pl-3 border-l-4 border-red-500 bg-red-50/30 rounded p-3">
-                        <h3 className="text-xs font-bold text-red-700 uppercase mb-1 flex items-center gap-2">
-                            <AlertTriangle size={12} /> Problema Relatado
+                <div className="mb-8 space-y-4">
+                    <div className="bg-slate-50 border-l-4 border-slate-300 p-4 rounded-r-md">
+                        <h3 className="text-xs font-black text-slate-900 uppercase mb-2 flex items-center gap-2">
+                            <AlertTriangle size={14} className="text-amber-500" /> Relato do Cliente
                         </h3>
-                        <p className="text-xs text-slate-800 italic leading-relaxed">"{order.reportedProblem}"</p>
-                    </section>
+                        <p className="text-xs text-slate-700 leading-relaxed italic">"{order.reportedProblem}"</p>
+                    </div>
 
                     {order.diagnosis && (
-                        <section className="relative pl-3 border-l-4 border-blue-600 bg-blue-50/30 rounded p-3">
-                            <h3 className="text-xs font-bold text-blue-800 uppercase mb-1 flex items-center gap-2">
-                                <Wrench size={12} /> Diagnóstico Técnico
+                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md">
+                            <h3 className="text-xs font-black text-blue-900 uppercase mb-2 flex items-center gap-2">
+                                <Wrench size={14} className="text-blue-600" /> Diagnóstico Técnico
                             </h3>
                             <p className="text-xs text-slate-800 leading-relaxed">{order.diagnosis}</p>
-                        </section>
+                        </div>
                     )}
                 </div>
 
-                {/* --- IMAGES --- */}
-                <section className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex items-center gap-2">
-                        <ImageIcon size={14} className="text-slate-700" />
-                        <h3 className="text-xs font-bold text-slate-800 uppercase">Imagens do Reparo</h3>
+                {/* --- IMAGES GRID --- */}
+                <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-3 border-b border-slate-200 pb-2">
+                        <ImageIcon size={16} className="text-slate-900" />
+                        <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide">Registro Fotográfico</h2>
                     </div>
-                    <div className="grid grid-cols-4 gap-4 p-4">
+                    <div className="grid grid-cols-4 gap-4">
                         {[
                             { label: 'Antes (Frente)', src: order.imgBeforeFront },
                             { label: 'Antes (Trás)', src: order.imgBeforeBack },
                             { label: 'Depois (Frente)', src: order.imgAfterFront },
                             { label: 'Depois (Trás)', src: order.imgAfterBack },
                         ].map((img, idx) => (
-                            <div key={idx} className="flex flex-col items-center">
-                                <div className="w-full aspect-[3/4] border border-gray-200 rounded bg-gray-50 flex items-center justify-center overflow-hidden mb-1.5 relative">
+                            <div key={idx} className="flex flex-col gap-1">
+                                <div className="aspect-[3/4] bg-slate-100 rounded border border-slate-200 flex items-center justify-center overflow-hidden">
                                     {img.src ? (
                                         <img src={img.src} alt={img.label} className="w-full h-full object-cover" />
                                     ) : (
-                                        <span className="text-[9px] text-gray-400 font-medium">Sem Imagem</span>
+                                        <span className="text-[9px] text-slate-400 font-bold uppercase">Sem Foto</span>
                                     )}
                                 </div>
-                                <span className="text-[9px] uppercase font-bold text-gray-500">{img.label}</span>
+                                <span className="text-[8px] font-bold text-center text-slate-500 uppercase">{img.label}</span>
                             </div>
                         ))}
                     </div>
-                </section>
+                </div>
 
                 {/* --- FINANCIALS --- */}
-                <section className="mb-8">
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                        <div className="bg-slate-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <DollarSign size={14} className="text-slate-700" />
-                                <h3 className="text-xs font-bold text-slate-800 uppercase">Detalhamento Financeiro</h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[9px] uppercase font-bold text-gray-500">Pagamento:</span>
-                                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                    }`}>
-                                    {order.paymentStatus === 'paid' ? 'Pago' : 'Pendente'}
-                                </span>
+                <div className="mb-8">
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
+                        <div className="flex items-center gap-2">
+                            <DollarSign size={16} className="text-slate-900" />
+                            <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide">Valores e Serviços</h2>
+                        </div>
+                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                            Pagamento: {order.paymentStatus === 'paid' ? 'PAGO' : 'PENDENTE'}
+                        </div>
+                    </div>
+
+                    <table className="w-full text-xs mb-4">
+                        <thead className="bg-slate-100 text-slate-600 uppercase font-bold">
+                            <tr>
+                                <th className="py-2 px-3 text-left w-16">Item</th>
+                                <th className="py-2 px-3 text-left">Descrição</th>
+                                <th className="py-2 px-3 text-right w-16">Qtd.</th>
+                                <th className="py-2 px-3 text-right w-24">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {order.services.map((item, i) => (
+                                <tr key={`srv-${i}`}>
+                                    <td className="py-2 px-3 text-slate-400 font-mono text-[10px]">{i + 1}</td>
+                                    <td className="py-2 px-3 font-medium text-slate-800">{item.description}</td>
+                                    <td className="py-2 px-3 text-right text-slate-600">1</td>
+                                    <td className="py-2 px-3 text-right font-mono text-slate-700">{item.value.toFixed(2)}</td>
+                                </tr>
+                            ))}
+                            {order.products && order.products.map((prod, i) => (
+                                <tr key={`prod-${i}`}>
+                                    <td className="py-2 px-3 text-slate-400 font-mono text-[10px]">{order.services.length + i + 1}</td>
+                                    <td className="py-2 px-3 font-medium text-slate-800">{prod.description} <span className="text-[9px] text-slate-400 font-normal ml-1">(Produto)</span></td>
+                                    <td className="py-2 px-3 text-right text-slate-600">{prod.quantity}</td>
+                                    <td className="py-2 px-3 text-right font-mono text-slate-700">{prod.total.toFixed(2)}</td>
+                                </tr>
+                            ))}
+                            {!order.services.length && (!order.products || !order.products.length) && (
+                                <tr>
+                                    <td colSpan={4} className="py-6 text-center text-slate-400 italic font-medium">Nenhum serviço ou produto lançado.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+
+                    <div className="flex justify-end">
+                        <div className="w-48 space-y-1">
+                            {order.discount > 0 && (
+                                <div className="flex justify-between text-xs text-red-500 font-bold">
+                                    <span>Desconto:</span>
+                                    <span>- {order.discount.toFixed(2)}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-base font-black text-slate-900 border-t-2 border-slate-900 pt-1">
+                                <span>TOTAL:</span>
+                                <span>{formatCurrency(order.totalValue)}</span>
                             </div>
                         </div>
-                        <table className="w-full text-xs">
-                            <thead className="bg-gray-50 text-gray-500 font-semibold border-b border-gray-200">
-                                <tr>
-                                    <th className="text-left px-4 py-2 uppercase text-[9px]">Código</th>
-                                    <th className="text-left px-4 py-2 uppercase text-[9px]">Descrição</th>
-                                    <th className="text-right px-4 py-2 uppercase text-[9px]">Qtd.</th>
-                                    <th className="text-right px-4 py-2 uppercase text-[9px] w-32">Valor (R$)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {order.services.map((item, i) => (
-                                    <tr key={`srv-${i}`}>
-                                        <td className="px-4 py-2 text-slate-500 font-mono text-[9px]">{item.code || 'SERV'}</td>
-                                        <td className="px-4 py-2 text-slate-700">{item.description}</td>
-                                        <td className="px-4 py-2 text-right text-slate-600">1</td>
-                                        <td className="px-4 py-2 text-right font-mono text-slate-600">{item.value.toFixed(2)}</td>
-                                    </tr>
-                                ))}
-                                {order.products && order.products.map((prod, i) => (
-                                    <tr key={`prod-${i}`}>
-                                        <td className="px-4 py-2 text-slate-500 font-mono text-[9px]">{prod.productId ? prod.productId.slice(0, 4).toUpperCase() : 'PROD'}</td>
-                                        <td className="px-4 py-2 text-slate-700">{prod.description}</td>
-                                        <td className="px-4 py-2 text-right text-slate-600">{prod.quantity}</td>
-                                        <td className="px-4 py-2 text-right font-mono text-slate-600">{prod.total.toFixed(2)}</td>
-                                    </tr>
-                                ))}
-                                {!order.services.length && (!order.products || !order.products.length) && (
-                                    <tr>
-                                        <td colSpan={4} className="px-4 py-4 text-center text-gray-400 italic">Nenhum serviço ou produto lançado.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                            <tfoot className="bg-slate-50 font-bold border-t border-gray-200">
-                                {order.discount > 0 && (
-                                    <tr>
-                                        <td colSpan={3} className="px-4 py-2 text-right text-red-500 uppercase text-[9px]">Desconto</td>
-                                        <td className="px-4 py-2 text-right text-red-600 font-mono">- {order.discount.toFixed(2)}</td>
-                                    </tr>
-                                )}
-                                <tr>
-                                    <td colSpan={3} className="px-4 py-3 text-right text-slate-900 uppercase">Total</td>
-                                    <td className="px-4 py-3 text-right text-lg text-blue-900">{formatCurrency(order.totalValue)}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
                     </div>
-                </section>
+                </div>
 
                 {/* --- FOOTER & SIGNATURE --- */}
-                <footer className="mt-auto">
-                    <div className="border-t border-dashed border-gray-300 pt-4 mb-8">
-                        <p className="text-[8px] text-justify text-gray-400 leading-tight">
-                            <strong>TERMOS DE GARANTIA:</strong> 1. A garantia é de 90 dias, conforme Art. 26 do Código de Defesa do Consumidor. 2. A garantia cobre apenas o serviço executado e peças substituídas. 3. Danos causados por mau uso, quedas, líquidos ou oxidação anulam a garantia imediatamente. 4. A empresa não se responsabiliza por dados pessoais; o backup é responsabilidade do cliente. 5. Equipamentos não retirados no prazo máximo de 90 dias após aviso de conclusão poderão ser descartados ou vendidos para custear despesas de armazenamento (Lei 11.111/2005). 6. Ao assinar, o cliente declara estar ciente e de acordo com as condições acima.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-12 pt-8 mb-4">
+                <div className="mt-auto pt-6">
+                    <div className="grid grid-cols-2 gap-16 mb-6">
                         <div className="text-center">
-                            <div className="border-b border-slate-900 mb-2 w-3/4 mx-auto"></div>
-                            <p className="text-[10px] font-bold uppercase text-slate-800">{order.customerName}</p>
-                            <p className="text-[9px] uppercase text-gray-500">Assinatura do Cliente</p>
+                            <div className="border-b border-slate-400 mb-2"></div>
+                            <p className="text-[10px] font-bold text-slate-900 uppercase">{order.customerName}</p>
+                            <p className="text-[9px] text-slate-500 uppercase">Assinatura do Cliente</p>
                         </div>
                         <div className="text-center">
-                            <div className="border-b border-slate-900 mb-2 w-3/4 mx-auto"></div>
-                            <p className="text-[10px] font-bold uppercase text-slate-800">Tecmondo Informática</p>
-                            <p className="text-[9px] uppercase text-gray-500">Assinatura do Técnico</p>
+                            <div className="border-b border-slate-400 mb-2"></div>
+                            <p className="text-[10px] font-bold text-slate-900 uppercase">Tecmondo Informática</p>
+                            <p className="text-[9px] text-slate-500 uppercase">Assinatura do Técnico / Responsável</p>
                         </div>
                     </div>
 
-                    <div className="text-center text-[9px] text-slate-300 mt-4 uppercase tracking-widest">
-                        Sistema Tecmondo Manager • Documento gerado em {new Date().toLocaleString('pt-BR')}
+                    <div className="text-[8px] text-slate-400 text-justify leading-snug border-t border-slate-200 pt-3">
+                        <p><strong>TERMOS DE GARANTIA:</strong> A garantia legal é de 90 dias (Art. 26 CDC). Cobrimos apenas o serviço executado e peças trocadas. Perda de garantia imediata em caso de: mau uso, quedas, contato com líquidos, violação de selos ou manutenção por terceiros. Não nos responsabilizamos por backup de dados. Equipamentos não retirados em 90 dias após notificação serão descartados ou vendidos para custeio (Lei 11.111/2005).</p>
+                        <p className="mt-1 text-center font-mono">Sistema Tecmondo Manager v1.0 • Impresso em {new Date().toLocaleString('pt-BR')}</p>
                     </div>
-                </footer>
-
-                {/* --- FAB BUTTON --- */}
-                <button
-                    onClick={() => window.print()}
-                    className="fixed bottom-6 right-6 bg-blue-900 hover:bg-blue-800 text-white p-4 rounded-full shadow-xl transition-transform hover:scale-105 active:scale-95 print:hidden z-50 flex items-center justify-center"
-                    title="Imprimir"
-                >
-                    <Printer size={24} />
-                </button>
+                </div>
             </div>
         </div>
     );
