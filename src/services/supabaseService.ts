@@ -288,6 +288,11 @@ export const supabaseService = {
         return createResponse(null, null);
     },
 
+    deleteServiceOrder: async (id: string): Promise<ApiResponse<void>> => {
+        const { error } = await supabase.from('service_orders').delete().eq('id', id);
+        return createResponse(null, error);
+    },
+
     // ... (rest of methods)
 
     // --- Transactions ---

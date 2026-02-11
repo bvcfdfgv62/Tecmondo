@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { storageService } from '../services/storage';
 import { ServiceOrder, ServiceOrderStatus } from '../types';
 import {
-    Wrench, Plus, Search, Filter, Clock, CheckCircle, AlertCircle, FileText
+    Wrench, Plus, Search, Filter, Clock, CheckCircle, AlertCircle, FileText, Trash2
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -176,14 +176,39 @@ const ServiceOrders: React.FC = () => {
                                                 <TableCell className="text-muted-foreground text-xs">
                                                     {new Date(os.createdAt).toLocaleDateString('pt-BR')}
                                                 </TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell className="text-right flex justify-end gap-2">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => navigate(`/os/${os.id}`)}
                                                         className="h-8 w-8 p-0 text-muted-foreground hover:text-white"
+                                                        title="Ver Detalhes"
                                                     >
                                                         <FileText size={16} />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            if (window.confirm('Tem certeza que deseja excluir esta OS?')) {
+                                                                try {
+                                                                    const response = await storageService.deleteServiceOrder(os.id);
+                                                                    if (response.success) {
+                                                                        loadOrders();
+                                                                    } else {
+                                                                        alert(`Erro ao excluir: ${response.error}`);
+                                                                    }
+                                                                } catch (error) {
+                                                                    console.error('Erro ao excluir OS:', error);
+                                                                    alert('Erro ao excluir OS.');
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="h-8 w-8 p-0 text-red-500/70 hover:text-red-500 hover:bg-red-500/10"
+                                                        title="Excluir OS"
+                                                    >
+                                                        <Trash2 size={16} />
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
