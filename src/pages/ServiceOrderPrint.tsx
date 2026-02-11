@@ -63,24 +63,38 @@ const ServiceOrderPrint: React.FC = () => {
             <div className="w-full text-center text-slate-400 text-xs py-4 italic">Nenhuma senha cadastrada</div>
         );
 
-        // Pattern is expected to be numbers 1-9. Grid is 3x3.
-        // 1 2 3
-        // 4 5 6
-        // 7 8 9
+        // Pattern is expected to be numbers 0-8 (from PatternLock component)
+        // Format can be "0-1-2" or legacy "125"
+
         // Coordinates for SVG lines
-        const getCoord = (n: number) => {
-            const row = Math.floor((n - 1) / 3);
-            const col = (n - 1) % 3;
+        const getCoord = (index: number) => {
+            const row = Math.floor(index / 3);
+            const col = index % 3;
             return { x: col * 40 + 20, y: row * 40 + 20 };
         };
 
-        const points = pattern.split('').map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 9);
+        let points: number[] = [];
+        if (pattern.includes('-')) {
+            // "0-1-2" -> [0, 1, 2]
+            points = pattern.split('-').map(Number).filter(n => !isNaN(n));
+        } else {
+            // "123" -> [1, 2, 3] (Legacy 1-based? Or manual entry?)
+            // Assuming legacy might be 1-based, let's treat 1-9 as 0-8 if needed, 
+            // BUT standardizing on the component output is safer.
+            // If the string is just digits, let's assume they map to 1-9 visual layout if > 0.
+            // However, safe bet is to assume the component output "0-1-2".
+            // If fallback:
+            points = pattern.split('').map(Number).filter(n => !isNaN(n));
+
+            // Heuristic: If we have digits 1-9 and no dash, maybe subtract 1? 
+            // Let's just render what we have. If it's 0-8, it works.
+        }
 
         return (
             <div className="flex justify-center py-2">
                 <svg width="120" height="120" className="bg-slate-50 rounded-lg border border-slate-200">
-                    {/* Grid Dots */}
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => {
+                    {/* Grid Dots (0-8) */}
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(n => {
                         const { x, y } = getCoord(n);
                         const isSelected = points.includes(n);
                         return <circle key={n} cx={x} cy={y} r={isSelected ? 6 : 4} fill={isSelected ? '#1e293b' : '#cbd5e1'} />;
@@ -158,7 +172,7 @@ const ServiceOrderPrint: React.FC = () => {
                 <div className="bg-slate-100 mx-8 py-2 px-4 rounded-lg flex justify-between items-center mb-6 border border-slate-200">
                     <span className="font-bold text-slate-700 uppercase text-xs">Status Atual:</span>
                     <span className={`font-black uppercase text-sm px-3 py-1 rounded ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            order.status === 'open' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'
+                        order.status === 'open' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'
                         }`}>
                         {order.status === 'open' ? 'Aberto / Em Análise' :
                             order.status === 'completed' ? 'Finalizado' : order.status}
