@@ -42,54 +42,105 @@
 
 @page {
   size: A4 portrait;
-  margin: 20mm;
+  margin: 0;
 }
 
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 0;
+
+  /* GLOBAL RESETS FOR PRINT */
+  *,
+  *::before,
+  *::after {
+    text-shadow: none !important;
+    box-shadow: none !important;
   }
 
-  margin: 0;
-  size: auto;
+  html,
+  body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+  }
+
+  /* HIDE EVERYTHING ELSE */
+  body>*:not(#root) {
+    display: none !important;
+  }
+
+  /* ENSURE ROOT IS VISIBLE & WHITE */
+  #root {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: white !important;
+    display: block !important;
+    position: relative !important;
+  }
+
+  /* ALLOW PRINT CONTENT TO FLOW */
+  .print-page {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: white !important;
+    display: block !important;
+    page-break-after: auto;
+  }
+
+  /* HILT UTILITIES */
+  .no-print,
+  button,
+  [role="button"],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* AVOID BREAKING INSIDE ELEMENTS */
+  tr,
+  img,
+  .avoid-break {
+    page-break-inside: avoid;
+  }
 }
 
-body {
-  background-color: white !important;
-  color: black !important;
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
-}
-
-/* Hide non-print elements globally if marked */
-.no-print,
-button,
-.print\:hidden {
-  display: none !important;
-}
-
-/* Ensure print area fills page */
-#root {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-}
-
-/* Ensure portal looks right on screen too */
-.print-portal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: #f3f4f6;
-  /* bg-gray-100 */
-  overflow-y: auto;
-  z-index: 9999;
-  /* On top of everything */
+/* SCREEN PREVIEW STYLES for Print Page */
+.print-preview-wrapper {
+  background-color: #525659;
+  /* Chrome Print Preview Grey */
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   padding: 2rem;
+}
+
+.print-page-a4 {
+  background: white;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  margin: 0 auto;
+  position: relative;
+}
+
+@media print {
+  .print-preview-wrapper {
+    background: white !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .print-page-a4 {
+    box-shadow: none !important;
+    padding: 0 !important;
+    /* Let @page margin handle it or keep it if @page margin is 0 */
+    margin: 0 !important;
+    width: 100% !important;
+  }
 }
