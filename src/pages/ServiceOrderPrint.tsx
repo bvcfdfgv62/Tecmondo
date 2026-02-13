@@ -351,56 +351,75 @@ const ServiceOrderPrint: React.FC = () => {
                     </div>
                 </div>
 
-                {/* --- FOOTER: TERMS --- */}
-                <div className="px-8 mt-auto mb-8">
-                    <div className="bg-slate-50 border border-slate-200 rounded p-4 text-[9px] text-slate-600 leading-tight text-justify">
-                        <h4 className="font-bold text-slate-800 uppercase mb-2 border-b border-slate-200 pb-1">Cláusulas de Garantia e Responsabilidade</h4>
+                {/* --- PAGE 2: TERMS & SIGNATURES --- */}
+                <div style={{ pageBreakBefore: 'always' }} className="flex flex-col min-h-[297mm] p-8 pt-12 relative">
 
-                        <div className="space-y-2">
+                    {/* Watermark/Header for Page 2 */}
+                    <div className="absolute top-8 right-8 text-right opacity-50">
+                        <p className="text-xs uppercase font-bold text-slate-400">OS #{order.id.slice(0, 6).toUpperCase()} - Página 2/2</p>
+                    </div>
+
+                    <div className="mb-8">
+                        <img src="/logo.jpg" alt="Logo" className="w-32 object-contain mb-4 mix-blend-multiply opacity-80" />
+                        <h2 className="text-xl font-black text-slate-800 uppercase tracking-wide border-b-2 border-slate-800 pb-2 mb-6">
+                            Termos e Garantia
+                        </h2>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 text-[10px] text-slate-700 leading-relaxed text-justify flex-grow">
+                        <h4 className="font-bold text-slate-900 text-sm uppercase mb-4 border-b border-slate-200 pb-2">Cláusulas de Garantia e Responsabilidade</h4>
+
+                        <div className="space-y-4">
                             <div>
-                                <strong className="block font-bold text-slate-700 mb-0.5">1. Da Garantia Legal</strong>
+                                <strong className="block font-bold text-slate-900 text-xs mb-1">1. Da Garantia Legal</strong>
                                 <p>Nos termos do art. 26 do Código de Defesa do Consumidor (Lei nº 8.078/1990), é concedida garantia legal de 90 (noventa) dias, contados da data de entrega do equipamento ao cliente, restrita exclusivamente ao serviço executado e às peças efetivamente substituídas.</p>
                             </div>
 
                             <div>
-                                <strong className="block font-bold text-slate-700 mb-0.5">2. Das Exclusões de Garantia</strong>
+                                <strong className="block font-bold text-slate-900 text-xs mb-1">2. Das Exclusões de Garantia</strong>
                                 <p>A garantia ora concedida não abrange defeitos ou danos decorrentes de:</p>
-                                <ul className="list-none pl-1 mt-0.5 space-y-0.5">
+                                <ul className="list-none pl-2 mt-1 space-y-1">
                                     <li>I – Mau uso, utilização inadequada ou em desacordo com as orientações técnicas;</li>
                                     <li>II – Quedas, impactos, pressão excessiva ou quaisquer danos físicos;</li>
                                     <li>III – Contato com líquidos, infiltração, oxidação ou exposição à umidade;</li>
                                     <li>IV – Intervenção, violação ou tentativa de reparo por terceiros não autorizados;</li>
                                     <li>V – Oscilações ou falhas na rede elétrica, curto-circuito ou sobrecarga.</li>
                                 </ul>
-                                <p className="mt-0.5 italic">Constatada qualquer das hipóteses acima, a garantia será automaticamente considerada sem efeito.</p>
+                                <p className="mt-2 italic font-medium">Constatada qualquer das hipóteses acima, a garantia será automaticamente considerada sem efeito.</p>
                             </div>
 
                             <div>
-                                <strong className="block font-bold text-slate-700 mb-0.5">3. Da Responsabilidade sobre Dados</strong>
+                                <strong className="block font-bold text-slate-900 text-xs mb-1">3. Da Responsabilidade sobre Dados</strong>
                                 <p>A CONTRATADA não se responsabiliza, em nenhuma hipótese, por perda, corrupção ou vazamento de dados, arquivos, imagens, aplicativos ou quaisquer informações armazenadas no equipamento. Compete exclusivamente ao cliente a realização de backup prévio antes da entrega do aparelho para manutenção.</p>
                             </div>
 
                             <div>
-                                <strong className="block font-bold text-slate-700 mb-0.5">4. Do Prazo para Retirada do Equipamento</strong>
+                                <strong className="block font-bold text-slate-900 text-xs mb-1">4. Do Prazo para Retirada do Equipamento</strong>
                                 <p>O cliente obriga-se a retirar o equipamento no prazo máximo de 90 (noventa) dias, contados da data de comunicação da conclusão do serviço. Decorrido o referido prazo sem manifestação ou retirada do bem, caracterizar-se-á abandono, autorizando a empresa a dar o destino cabível (descarte, venda ou compensação de custos) conforme art. 1.275, inciso III, do Código Civil.</p>
                             </div>
 
                             <div>
-                                <strong className="block font-bold text-slate-700 mb-0.5">5. Da Declaração de Ciência e Concordância</strong>
+                                <strong className="block font-bold text-slate-900 text-xs mb-1">5. Da Declaração de Ciência e Concordância</strong>
                                 <p>O cliente declara, para todos os fins de direito, que as informações fornecidas são verdadeiras, que leu integralmente as cláusulas acima e que concorda expressamente com seus termos e condições.</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex justify-between gap-16 mt-12">
+                    <div className="flex justify-between gap-16 mt-16 mb-12">
                         <div className="flex-1 text-center">
-                            <div className="border-b border-slate-400 mb-2"></div>
-                            <p className="text-[10px] font-bold text-slate-700 uppercase">Assinatura do Cliente</p>
+                            <div className="border-b border-slate-800 mb-2"></div>
+                            <p className="text-xs font-bold text-slate-900 uppercase">Assinatura do Cliente</p>
+                            <p className="text-[10px] text-slate-500">{order.customerName}</p>
                         </div>
                         <div className="flex-1 text-center">
-                            <div className="border-b border-slate-400 mb-2"></div>
-                            <p className="text-[10px] font-bold text-slate-700 uppercase">Técnico Responsável</p>
+                            <div className="border-b border-slate-800 mb-2"></div>
+                            <p className="text-xs font-bold text-slate-900 uppercase">Técnico Responsável</p>
+                            <p className="text-[10px] text-slate-500">TecMondo Assistência</p>
                         </div>
+                    </div>
+
+                    <div className="text-center text-[9px] text-slate-400 mt-auto">
+                        <p>Impresso em {new Date().toLocaleDateString()} às {new Date().toLocaleTimeString()}</p>
                     </div>
                 </div>
 
