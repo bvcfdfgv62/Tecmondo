@@ -25,42 +25,88 @@ const ProductReport: React.FC = () => {
     const totalValue = products.reduce((acc, p) => acc + (p.stockQuantity * p.resalePrice), 0);
 
     const generatePDF = () => {
-        const doc = new jsPDF();
-
-        // Header
-        doc.setFontSize(18);
-        doc.text('Relatório de Produtos e Estoque', 14, 20);
-
-        doc.setFontSize(10);
-        doc.text(`Gerado em: ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`, 14, 28);
-        doc.text(`Total de Itens: ${totalStock}`, 14, 34);
-
-        // Table
-        const tableColumn = ["Código/Ref", "Produto", "Fornecedor", "Qtd.", "Custo", "Venda", "Total Venda"];
-        const tableRows: any[] = [];
-
-        products.forEach(product => {
-            const productData = [
-                product.barcode || '-',
-                product.description,
-                product.supplier || '-',
-                product.stockQuantity,
-                `R$ ${product.purchasePrice.toFixed(2)}`,
-                `R$ ${product.resalePrice.toFixed(2)}`,
-                `R$ ${(product.stockQuantity * product.resalePrice).toFixed(2)}`
-            ];
-            tableRows.push(productData);
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
         });
+
+        const totalPagesExp = '{total_pages_count_string}';
+        const dateStr = `Gerado em: ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`;
+
+        // Define columns
+        const tableColumn = ["Código/Ref", "Produto", "Fornecedor", "Qtd.", "Custo", "Venda", "Total Venda"];
+
+        // Prepare rows
+        const tableRows = products.map(product => [
+            product.barcode || '-',
+            product.description,
+            product.supplier || '-',
+            product.stockQuantity,
+            `R$ ${product.purchasePrice.toFixed(2)}`,
+            `R$ ${product.resalePrice.toFixed(2)}`,
+            `R$ ${(product.stockQuantity * product.resalePrice).toFixed(2)}`
+        ]);
 
         // @ts-ignore
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
-            startY: 40,
+            startY: 45,
+            margin: { top: 40, right: 15, bottom: 20, left: 15 },
             theme: 'grid',
-            headStyles: { fillColor: [22, 163, 74] }, // Emerald header
-            styles: { fontSize: 8 },
+            headStyles: {
+                fillColor: [22, 163, 74], // Emerald
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            styles: {
+                fontSize: 8,
+                cellPadding: 2,
+                overflow: 'linebreak',
+                valign: 'middle'
+            },
+            rowPageBreak: 'auto',
+            columnStyles: {
+                0: { cellWidth: 25 }, // Código
+                1: { cellWidth: 'auto' }, // Produto
+                2: { cellWidth: 25 }, // Fornecedor
+                3: { cellWidth: 15, halign: 'center' }, // Qtd
+                4: { cellWidth: 25, halign: 'right' }, // Custo
+                5: { cellWidth: 25, halign: 'right' }, // Venda
+                6: { cellWidth: 25, halign: 'right' }  // Total
+            },
+            didDrawPage: (data) => {
+                // Header
+                doc.setFontSize(18);
+                doc.setTextColor(40);
+                doc.text('Relatório de Produtos e Estoque', data.settings.margin.left, 20);
+
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(dateStr, data.settings.margin.left, 28);
+
+                // Show totals only on first page header or maybe useful on all? 
+                // Let's keep it simple on the header context.
+                if (data.pageNumber === 1) {
+                    doc.text(`Total de Itens: ${totalStock} | Valor Total (Venda): ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}`, data.settings.margin.left, 34);
+                }
+
+                // Page numbers
+                let str = 'Página ' + doc.getNumberOfPages();
+                if (typeof doc.putTotalPages === 'function') {
+                    str = str + ' de ' + totalPagesExp;
+                }
+                doc.setFontSize(8);
+                doc.text(str, doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 10);
+            }
         });
+
+        // Add total pages count
+        if (typeof doc.putTotalPages === 'function') {
+            doc.putTotalPages(totalPagesExp);
+        }
 
         doc.save(`relatorio-produtos-${new Date().toISOString().split('T')[0]}.pdf`);
     };
