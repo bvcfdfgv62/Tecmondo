@@ -353,14 +353,43 @@ const ServiceOrderPrint: React.FC = () => {
 
                 {/* --- FOOTER: TERMS --- */}
                 <div className="px-8 mt-auto mb-8">
-                    <div className="bg-slate-50 border border-slate-200 rounded p-4 text-[10px] text-slate-600 leading-snug text-justify">
-                        <h4 className="font-bold text-slate-800 uppercase mb-1">Termos de Responsabilidade e Garantia</h4>
-                        <p>
-                            1. A Garantia é de 90 dias (conforme lei vigente) apenas sobre o serviço executado e peças substituídas.
-                            2. A garantia não cobre danos causados por mau uso, quedas, contato com líquidos ou oxidação.
-                            3. O cliente declara que as infromações acima conferem e está ciente que aparelhos não retirados em até 90 dias serão descartados ou vendidos para custear o serviço (Art. 1.275 Código Civil).
-                            4. A empresa não se responsabiliza por dados armazenados. Recomendamos backup prévio.
-                        </p>
+                    <div className="bg-slate-50 border border-slate-200 rounded p-4 text-[9px] text-slate-600 leading-tight text-justify">
+                        <h4 className="font-bold text-slate-800 uppercase mb-2 border-b border-slate-200 pb-1">Cláusulas de Garantia e Responsabilidade</h4>
+
+                        <div className="space-y-2">
+                            <div>
+                                <strong className="block font-bold text-slate-700 mb-0.5">1. Da Garantia Legal</strong>
+                                <p>Nos termos do art. 26 do Código de Defesa do Consumidor (Lei nº 8.078/1990), é concedida garantia legal de 90 (noventa) dias, contados da data de entrega do equipamento ao cliente, restrita exclusivamente ao serviço executado e às peças efetivamente substituídas.</p>
+                            </div>
+
+                            <div>
+                                <strong className="block font-bold text-slate-700 mb-0.5">2. Das Exclusões de Garantia</strong>
+                                <p>A garantia ora concedida não abrange defeitos ou danos decorrentes de:</p>
+                                <ul className="list-none pl-1 mt-0.5 space-y-0.5">
+                                    <li>I – Mau uso, utilização inadequada ou em desacordo com as orientações técnicas;</li>
+                                    <li>II – Quedas, impactos, pressão excessiva ou quaisquer danos físicos;</li>
+                                    <li>III – Contato com líquidos, infiltração, oxidação ou exposição à umidade;</li>
+                                    <li>IV – Intervenção, violação ou tentativa de reparo por terceiros não autorizados;</li>
+                                    <li>V – Oscilações ou falhas na rede elétrica, curto-circuito ou sobrecarga.</li>
+                                </ul>
+                                <p className="mt-0.5 italic">Constatada qualquer das hipóteses acima, a garantia será automaticamente considerada sem efeito.</p>
+                            </div>
+
+                            <div>
+                                <strong className="block font-bold text-slate-700 mb-0.5">3. Da Responsabilidade sobre Dados</strong>
+                                <p>A CONTRATADA não se responsabiliza, em nenhuma hipótese, por perda, corrupção ou vazamento de dados, arquivos, imagens, aplicativos ou quaisquer informações armazenadas no equipamento. Compete exclusivamente ao cliente a realização de backup prévio antes da entrega do aparelho para manutenção.</p>
+                            </div>
+
+                            <div>
+                                <strong className="block font-bold text-slate-700 mb-0.5">4. Do Prazo para Retirada do Equipamento</strong>
+                                <p>O cliente obriga-se a retirar o equipamento no prazo máximo de 90 (noventa) dias, contados da data de comunicação da conclusão do serviço. Decorrido o referido prazo sem manifestação ou retirada do bem, caracterizar-se-á abandono, autorizando a empresa a dar o destino cabível (descarte, venda ou compensação de custos) conforme art. 1.275, inciso III, do Código Civil.</p>
+                            </div>
+
+                            <div>
+                                <strong className="block font-bold text-slate-700 mb-0.5">5. Da Declaração de Ciência e Concordância</strong>
+                                <p>O cliente declara, para todos os fins de direito, que as informações fornecidas são verdadeiras, que leu integralmente as cláusulas acima e que concorda expressamente com seus termos e condições.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex justify-between gap-16 mt-12">
