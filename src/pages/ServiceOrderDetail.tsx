@@ -4,7 +4,7 @@ import { storageService } from '../services/storage';
 import { ServiceOrder, ServiceItem, ServiceOrderStatus, ServiceCategory, ServiceCatalogItem, Product } from '../types';
 import { SERVICE_CATALOG } from '../data/serviceCatalog';
 import {
-    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package, CreditCard, Banknote, QrCode
+    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package, CreditCard, Banknote, QrCode, Unlock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -411,6 +411,29 @@ const ServiceOrderDetail: React.FC = () => {
         }
     };
 
+    const handleReopen = async () => {
+        if (!confirm('Tem certeza que deseja reabrir esta OS? Isso permitirá edições novamente.')) return;
+
+        setLoading(true);
+        try {
+            const updated = { ...formData, status: 'open' as ServiceOrderStatus };
+            // Save to backend immediately so checking status elsewhere reflects this
+            const response = await storageService.saveServiceOrder(updated);
+
+            if (response.success) {
+                setFormData(updated);
+                alert('OS reaberta para edição.');
+            } else {
+                alert('Erro ao reabrir OS: ' + response.error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao reabrir OS');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-fade-in text-text-primary max-w-6xl mx-auto pb-20">
             {/* Header Actions */}
@@ -448,6 +471,11 @@ const ServiceOrderDetail: React.FC = () => {
                     {formData.status !== 'completed' && formData.status !== 'cancelled' && id !== 'novo' && (
                         <Button variant="outline" className="text-green-500 border-green-500/30 hover:bg-green-500/10" onClick={() => setShowPaymentModal(true)}>
                             <CheckCircle size={18} className="mr-2" /> Finalizar
+                        </Button>
+                    )}
+                    {(formData.status === 'completed' || formData.status === 'cancelled') && (
+                        <Button variant="outline" className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10" onClick={handleReopen}>
+                            <Unlock size={18} className="mr-2" /> Reabrir OS
                         </Button>
                     )}
                 </div>
