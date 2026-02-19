@@ -283,6 +283,7 @@ export const supabaseService = {
             entryPhotos: newOrder.entry_photos || [],
             exitPhotos: newOrder.exit_photos || [],
             paymentMethod: newOrder.payment_method,
+            cardFlag: newOrder.card_flag,
             entryDate: newOrder.entry_date,
             exitDate: newOrder.exit_date
         };

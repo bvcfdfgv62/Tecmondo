@@ -82,6 +82,7 @@ const ServiceOrderDetail: React.FC = () => {
     // Payment Modal State
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'pix' | 'money' | 'credit' | 'debit'>('pix');
+    const [cardFlag, setCardFlag] = useState<'mastercard' | 'visa' | 'amex' | 'elo' | 'other' | undefined>(undefined);
 
     // Initialization
     useEffect(() => {
@@ -387,7 +388,8 @@ const ServiceOrderDetail: React.FC = () => {
             ...formData,
             status: 'completed' as ServiceOrderStatus,
             paymentStatus: 'paid' as const,
-            paymentMethod: paymentMethod
+            paymentMethod: paymentMethod,
+            cardFlag: (paymentMethod === 'credit' || paymentMethod === 'debit') ? cardFlag : undefined
         };
 
         setLoading(true);
@@ -1105,6 +1107,28 @@ const ServiceOrderDetail: React.FC = () => {
                                         <span className="font-bold text-sm">Débito</span>
                                     </button>
                                 </div>
+
+                                {(paymentMethod === 'credit' || paymentMethod === 'debit') && (
+                                    <div className="pt-4  animate-in fade-in slide-in-from-top-2">
+                                        <label className="text-xs uppercase tracking-wider text-slate-500 block text-center mb-3">Selecione a Bandeira</label>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {['mastercard', 'visa', 'amex', 'elo', 'other'].map((flag) => (
+                                                <button
+                                                    key={flag}
+                                                    onClick={() => setCardFlag(flag as any)}
+                                                    className={cn(
+                                                        "flex flex-col items-center justify-center p-2 rounded-md border transition-all h-20",
+                                                        cardFlag === flag
+                                                            ? "bg-blue-500/20 border-blue-500 text-blue-400 ring-1 ring-blue-500/50"
+                                                            : "bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800 hover:border-slate-700"
+                                                    )}
+                                                >
+                                                    <span className="font-bold text-[10px] uppercase">{flag === 'other' ? 'Outro' : flag}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex gap-3 pt-2">
@@ -1147,3 +1171,4 @@ const ServiceOrderDetail: React.FC = () => {
 };
 
 export default ServiceOrderDetail;
+

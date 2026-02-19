@@ -136,6 +136,7 @@ export interface ServiceOrder {
     // Payment
     paymentMethod?: 'pix' | 'money' | 'credit' | 'debit';
     paymentStatus: 'pending' | 'paid';
+    cardFlag?: 'mastercard' | 'visa' | 'amex' | 'elo' | 'other';
 
     // Legal
     warrantyTerms?: string;
