@@ -1028,6 +1028,15 @@ const ServiceOrderDetail: React.FC = () => {
                                         </select>
                                     </div>
                                 )}
+                                {(formData.paymentMethod === 'credit' || formData.paymentMethod === 'debit') && formData.cardFlag && (
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] text-muted-foreground uppercase">Bandeira</label>
+                                        <div className="w-full bg-slate-900 border border-slate-700 rounded-sm p-2 text-sm text-white uppercase flex items-center gap-2">
+                                            <CreditCard size={14} className="text-blue-400" />
+                                            {formData.cardFlag}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
