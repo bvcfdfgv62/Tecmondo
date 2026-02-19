@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { storageService } from '../services/storage';
 import { ServiceOrder, ServiceOrderStatus } from '../types';
 import {
-    Wrench, Plus, Search, Filter, Clock, CheckCircle, AlertCircle, FileText, Trash2
+    Wrench, Plus, Search, Filter, Clock, CheckCircle, AlertCircle, FileText, Trash2, Unlock
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -188,6 +188,33 @@ const ServiceOrders: React.FC = () => {
                                                         >
                                                             <FileText size={16} />
                                                         </Button>
+                                                        {(os.status === 'completed' || os.status === 'cancelled') && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={async (e) => {
+                                                                    e.stopPropagation();
+                                                                    if (window.confirm('Tem certeza que deseja reabrir esta OS?')) {
+                                                                        try {
+                                                                            const updated = { ...os, status: 'open' as ServiceOrderStatus };
+                                                                            const response = await storageService.saveServiceOrder(updated);
+                                                                            if (response.success) {
+                                                                                loadOrders();
+                                                                            } else {
+                                                                                alert('Erro ao reabrir: ' + response.error);
+                                                                            }
+                                                                        } catch (error) {
+                                                                            console.error(error);
+                                                                            alert('Erro ao reabrir OS.');
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                className="h-8 w-8 p-0 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10"
+                                                                title="Reabrir OS"
+                                                            >
+                                                                <Unlock size={16} />
+                                                            </Button>
+                                                        )}
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
