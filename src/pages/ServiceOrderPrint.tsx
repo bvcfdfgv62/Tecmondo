@@ -170,13 +170,30 @@ const ServiceOrderPrint: React.FC = () => {
 
                 {/* --- STATUS BAR --- */}
                 <div className="bg-slate-100 mx-8 py-2 px-4 rounded-lg flex justify-between items-center mb-6 border border-slate-200">
-                    <span className="font-bold text-slate-700 uppercase text-xs">Status Atual:</span>
-                    <span className={`font-black uppercase text-sm px-3 py-1 rounded ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        order.status === 'open' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'
-                        }`}>
-                        {order.status === 'open' ? 'Aberto / Em Análise' :
-                            order.status === 'completed' ? 'Finalizado' : order.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-700 uppercase text-xs">Status Atual:</span>
+                        <span className={`font-black uppercase text-sm px-3 py-1 rounded ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                            order.status === 'open' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'
+                            }`}>
+                            {order.status === 'open' ? 'Aberto / Em Análise' :
+                                order.status === 'completed' ? 'Finalizado' : order.status}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-700 uppercase text-xs">Pagamento:</span>
+                        <span className={`font-black uppercase text-sm px-3 py-1 rounded ${order.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                            {order.paymentStatus === 'paid' ? 'PAGO' : 'PENDENTE'}
+                        </span>
+                        {order.paymentStatus === 'paid' && order.paymentMethod && (
+                            <span className="font-bold text-slate-500 uppercase text-xs ml-1 bg-white px-2 py-1 rounded border border-slate-200">
+                                {order.paymentMethod === 'credit' ? 'CRÉDITO' :
+                                    order.paymentMethod === 'debit' ? 'DÉBITO' :
+                                        order.paymentMethod === 'pix' ? 'PIX' : 'DINHEIRO'}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* --- DADOS DO CLIENTE --- */}

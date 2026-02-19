@@ -189,7 +189,8 @@ export const supabaseService = {
             imgAfterFront: o.img_frente_reparado,
             imgAfterBack: o.img_tras_reparado,
             entryPhotos: o.entry_photos || [],
-            exitPhotos: o.exit_photos || []
+            exitPhotos: o.exit_photos || [],
+            paymentMethod: o.payment_method
         }));
 
         return createResponse(orders, null);
@@ -229,7 +230,8 @@ export const supabaseService = {
             imgAfterFront: o.img_frente_reparado,
             imgAfterBack: o.img_tras_reparado,
             entryPhotos: o.entry_photos || [],
-            exitPhotos: o.exit_photos || []
+            exitPhotos: o.exit_photos || [],
+            paymentMethod: o.payment_method
         };
 
         return createResponse(order, null);
@@ -275,7 +277,8 @@ export const supabaseService = {
             imgAfterFront: newOrder.img_frente_reparado,
             imgAfterBack: newOrder.img_tras_reparado,
             entryPhotos: newOrder.entry_photos || [],
-            exitPhotos: newOrder.exit_photos || []
+            exitPhotos: newOrder.exit_photos || [],
+            paymentMethod: newOrder.payment_method
         };
 
         return createResponse(createdOrder, null);
@@ -308,7 +311,8 @@ export const supabaseService = {
             img_frente_reparado: order.imgAfterFront,
             img_tras_reparado: order.imgAfterBack,
             entry_photos: order.entryPhotos,
-            exit_photos: order.exitPhotos
+            exit_photos: order.exitPhotos,
+            payment_method: order.paymentMethod
         }).eq('id', order.id);
 
         if (error) return createResponse(null, error);
@@ -404,7 +408,7 @@ export const supabaseService = {
 
         if (count === 0) {
             return await supabaseService.addTransaction({
-                description: `Serviço ${os.id} - ${os.customerName}`,
+                description: `Serviço ${os.id} - ${os.customerName} (${os.paymentMethod === 'credit' ? 'Crédito' : os.paymentMethod === 'debit' ? 'Débito' : os.paymentMethod === 'pix' ? 'Pix' : 'Dinheiro'})`,
                 amount: os.totalValue,
                 type: 'income',
                 category: 'Serviços'

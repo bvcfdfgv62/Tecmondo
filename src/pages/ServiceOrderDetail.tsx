@@ -4,7 +4,7 @@ import { storageService } from '../services/storage';
 import { ServiceOrder, ServiceItem, ServiceOrderStatus, ServiceCategory, ServiceCatalogItem, Product } from '../types';
 import { SERVICE_CATALOG } from '../data/serviceCatalog';
 import {
-    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package
+    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package, CreditCard, Banknote, QrCode
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,10 @@ const ServiceOrderDetail: React.FC = () => {
     // New Client Modal State
     const [showNewClientModal, setShowNewClientModal] = useState(false);
     const [newClientData, setNewClientData] = useState({ name: '', whatsapp: '', email: '', cpfOrCnpj: '' });
+
+    // Payment Modal State
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'pix' | 'money' | 'credit' | 'debit'>('pix');
 
     // Initialization
     useEffect(() => {
@@ -375,6 +379,38 @@ const ServiceOrderDetail: React.FC = () => {
         );
     }
 
+    const confirmFinalize = async () => {
+        const updatedOrder = {
+            ...formData,
+            status: 'completed' as ServiceOrderStatus,
+            paymentStatus: 'paid' as const,
+            paymentMethod: paymentMethod
+        };
+
+        setLoading(true);
+        try {
+            // Update local state first to reflect changes immediately in UI if needed, 
+            // though we are navigating away or showing success usually.
+            setFormData(updatedOrder);
+
+            // Save to backend
+            const response = await storageService.saveServiceOrder(updatedOrder);
+
+            if (response.success) {
+                setShowPaymentModal(false);
+                // Optionally show success message or navigate
+                navigate('/os');
+            } else {
+                alert('Erro ao finalizar OS: ' + response.error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao finalizar OS');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-fade-in text-text-primary max-w-6xl mx-auto pb-20">
             {/* Header Actions */}
@@ -410,15 +446,15 @@ const ServiceOrderDetail: React.FC = () => {
                         </Button>
                     )}
                     {formData.status !== 'completed' && formData.status !== 'cancelled' && id !== 'novo' && (
-                        <Button variant="outline" className="text-green-500 border-green-500/30 hover:bg-green-500/10" onClick={() => {
-                            setFormData(prev => ({ ...prev, status: 'completed' }));
-                            handleSave();
-                        }}>
+                        <Button variant="outline" className="text-green-500 border-green-500/30 hover:bg-green-500/10" onClick={() => setShowPaymentModal(true)}>
                             <CheckCircle size={18} className="mr-2" /> Finalizar
                         </Button>
                     )}
                 </div>
             </div>
+
+            {/* Hidden finalize logic */}
+            {/* The confirmFinalize function is hoisted or defined below, need to ensure it's accessible */}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Main Info Column */}
@@ -892,7 +928,7 @@ const ServiceOrderDetail: React.FC = () => {
                                             "w-full rounded-sm p-2 text-sm border",
                                             formData.paymentStatus === 'paid'
                                                 ? "bg-emerald-950/30 border-emerald-500/50 text-emerald-400"
-                                                : "bg-slate-950 border-slate-700 text-white"
+                                                : "bg-slate-900 border-slate-700 text-white"
                                         )}
                                         value={formData.paymentStatus}
                                         onChange={(e) => handleChange('paymentStatus', e.target.value)}
@@ -902,11 +938,115 @@ const ServiceOrderDetail: React.FC = () => {
                                         <option value="paid">Pago</option>
                                     </select>
                                 </div>
+                                {formData.paymentStatus === 'paid' && (
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] text-muted-foreground uppercase">Forma de Pagamento</label>
+                                        <select
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-sm p-2 text-sm text-white"
+                                            value={formData.paymentMethod || 'pix'}
+                                            onChange={(e) => handleChange('paymentMethod', e.target.value)}
+                                            disabled={isReadOnly}
+                                        >
+                                            <option value="pix">Pix</option>
+                                            <option value="money">Dinheiro</option>
+                                            <option value="credit">Cartão de Crédito</option>
+                                            <option value="debit">Cartão de Débito</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
                 </div>
             </div>
+
+            {/* Payment & Finalize Modal */}
+            {showPaymentModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <Card className="w-full max-w-lg bg-slate-900 border-emerald-500/30 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-600"></div>
+                        <CardHeader className="text-center pb-2">
+                            <CardTitle className="text-xl font-bold text-white flex flex-col items-center gap-2">
+                                <CheckCircle size={48} className="text-emerald-500 mb-2" />
+                                Finalizar Ordem de Serviço
+                            </CardTitle>
+                            <p className="text-slate-400 text-sm">Confirme o pagamento para encerrar</p>
+                        </CardHeader>
+                        <CardContent className="space-y-6 pt-4">
+
+                            <div className="bg-emerald-950/30 border border-emerald-500/20 rounded-lg p-4 flex flex-col items-center gap-1">
+                                <span className="text-xs uppercase tracking-wider text-emerald-500 font-bold">Valor Total a Receber</span>
+                                <span className="text-4xl font-black text-white tracking-tighter">
+                                    R$ {formData.totalValue.toFixed(2)}
+                                </span>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-xs uppercase tracking-wider text-slate-500 block text-center">Selecione a Forma de Pagamento</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => setPaymentMethod('pix')}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all",
+                                            paymentMethod === 'pix'
+                                                ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 ring-2 ring-emerald-500/20"
+                                                : "bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800 hover:border-slate-700"
+                                        )}
+                                    >
+                                        <QrCode size={24} />
+                                        <span className="font-bold text-sm">Pix</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setPaymentMethod('money')}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all",
+                                            paymentMethod === 'money'
+                                                ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 ring-2 ring-emerald-500/20"
+                                                : "bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800 hover:border-slate-700"
+                                        )}
+                                    >
+                                        <Banknote size={24} />
+                                        <span className="font-bold text-sm">Dinheiro</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setPaymentMethod('credit')}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all",
+                                            paymentMethod === 'credit'
+                                                ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 ring-2 ring-emerald-500/20"
+                                                : "bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800 hover:border-slate-700"
+                                        )}
+                                    >
+                                        <CreditCard size={24} />
+                                        <span className="font-bold text-sm">Crédito</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setPaymentMethod('debit')}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all",
+                                            paymentMethod === 'debit'
+                                                ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 ring-2 ring-emerald-500/20"
+                                                : "bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800 hover:border-slate-700"
+                                        )}
+                                    >
+                                        <CreditCard size={24} />
+                                        <span className="font-bold text-sm">Débito</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <Button variant="outline" className="flex-1 border-slate-700 hover:bg-slate-800" onClick={() => setShowPaymentModal(false)}>
+                                    Cancelar
+                                </Button>
+                                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold" onClick={confirmFinalize}>
+                                    <CheckCircle size={18} className="mr-2" /> Confirmar Recebimento
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {/* Quick Client Modal */}
             {showNewClientModal && (

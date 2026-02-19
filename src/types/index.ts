@@ -134,7 +134,7 @@ export interface ServiceOrder {
     totalValue: number;
 
     // Payment
-    paymentMethod?: 'pix' | 'money' | 'card';
+    paymentMethod?: 'pix' | 'money' | 'credit' | 'debit';
     paymentStatus: 'pending' | 'paid';
 
     // Legal
