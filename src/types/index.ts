@@ -142,6 +142,10 @@ export interface ServiceOrder {
     clientSignature?: string;
     technicianSignature?: string;
 
+    // Dates
+    entryDate?: string; // Date the device entered the shop
+    exitDate?: string; // Date the device was returned/picked up
+
     // Link to other entities
     budgetId?: string; // If converted from budget
     clientId?: string; // Foreign key to clients table

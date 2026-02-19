@@ -190,7 +190,9 @@ export const supabaseService = {
             imgAfterBack: o.img_tras_reparado,
             entryPhotos: o.entry_photos || [],
             exitPhotos: o.exit_photos || [],
-            paymentMethod: o.payment_method
+            paymentMethod: o.payment_method,
+            entryDate: o.entry_date,
+            exitDate: o.exit_date
         }));
 
         return createResponse(orders, null);
@@ -231,7 +233,9 @@ export const supabaseService = {
             imgAfterBack: o.img_tras_reparado,
             entryPhotos: o.entry_photos || [],
             exitPhotos: o.exit_photos || [],
-            paymentMethod: o.payment_method
+            paymentMethod: o.payment_method,
+            entryDate: o.entry_date,
+            exitDate: o.exit_date
         };
 
         return createResponse(order, null);
@@ -278,7 +282,9 @@ export const supabaseService = {
             imgAfterBack: newOrder.img_tras_reparado,
             entryPhotos: newOrder.entry_photos || [],
             exitPhotos: newOrder.exit_photos || [],
-            paymentMethod: newOrder.payment_method
+            paymentMethod: newOrder.payment_method,
+            entryDate: newOrder.entry_date,
+            exitDate: newOrder.exit_date
         };
 
         return createResponse(createdOrder, null);
@@ -312,7 +318,9 @@ export const supabaseService = {
             img_tras_reparado: order.imgAfterBack,
             entry_photos: order.entryPhotos,
             exit_photos: order.exitPhotos,
-            payment_method: order.paymentMethod
+            payment_method: order.paymentMethod,
+            entry_date: order.entryDate,
+            exit_date: order.exitDate
         }).eq('id', order.id);
 
         if (error) return createResponse(null, error);

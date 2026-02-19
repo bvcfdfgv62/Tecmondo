@@ -4,7 +4,7 @@ import { storageService } from '../services/storage';
 import { ServiceOrder, ServiceItem, ServiceOrderStatus, ServiceCategory, ServiceCatalogItem, Product } from '../types';
 import { SERVICE_CATALOG } from '../data/serviceCatalog';
 import {
-    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package, CreditCard, Banknote, QrCode, Unlock
+    Save, ArrowLeft, Printer, CheckCircle, Plus, Trash2, Search, Package, CreditCard, Banknote, QrCode, Unlock, Calendar as CalendarIcon
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,9 @@ const ServiceOrderDetail: React.FC = () => {
         products: [],
         discount: 0,
         totalValue: 0,
-        paymentStatus: 'pending'
+        paymentStatus: 'pending',
+        entryDate: new Date().toISOString(),
+        exitDate: ''
     });
 
     // Module State
@@ -111,7 +113,8 @@ const ServiceOrderDetail: React.FC = () => {
                     setFormData(prev => ({
                         ...prev,
                         id: 'new',
-                        createdAt: new Date().toISOString()
+                        createdAt: new Date().toISOString(),
+                        entryDate: new Date().toISOString()
                     }));
                 } else if (id) {
                     const response = await storageService.getServiceOrderById(id);
@@ -487,6 +490,47 @@ const ServiceOrderDetail: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Main Info Column */}
                 <div className="lg:col-span-8 space-y-6">
+                    {/* Dates Card */}
+                    <Card className="border-white/5 bg-surface/30">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
+                                <CalendarIcon size={16} /> Datas e Prazos
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-xs uppercase tracking-wider text-muted-foreground">Data de Entrada</label>
+                                <Input
+                                    type="datetime-local"
+                                    value={formData.entryDate ? new Date(new Date(formData.entryDate).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                                    onChange={(e) => {
+                                        const date = new Date(e.target.value);
+                                        handleChange('entryDate', date.toISOString());
+                                    }}
+                                    disabled={isReadOnly}
+                                    className="bg-slate-950 border-slate-700"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs uppercase tracking-wider text-muted-foreground">Data de Saída / Previsão</label>
+                                <Input
+                                    type="datetime-local"
+                                    value={formData.exitDate ? new Date(new Date(formData.exitDate).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                                    onChange={(e) => {
+                                        if (!e.target.value) {
+                                            handleChange('exitDate', '');
+                                            return;
+                                        }
+                                        const date = new Date(e.target.value);
+                                        handleChange('exitDate', date.toISOString());
+                                    }}
+                                    disabled={isReadOnly}
+                                    className="bg-slate-950 border-slate-700"
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Client & Equipment Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Card className="border-white/5 bg-surface/30">
