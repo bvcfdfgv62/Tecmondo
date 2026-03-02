@@ -76,7 +76,7 @@ export function ClientSearch({ onSelectClient, onNewClient }: ClientSearchProps)
                                 onClick={() => handleSelect(client)}
                                 className="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 flex flex-col gap-1"
                             >
-                                <div className="font-medium flex items-center gap-2">
+                                <div className="font-medium text-slate-900 flex items-center gap-2">
                                     <User className="h-4 w-4 text-gray-500" />
                                     {client.name}
                                 </div>
